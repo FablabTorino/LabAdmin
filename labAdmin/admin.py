@@ -1,5 +1,5 @@
 from django.contrib import admin
-from polls.models import *
+from labAdmin.models import *
 
 class MyModelAdmin(admin.ModelAdmin):
     pass
