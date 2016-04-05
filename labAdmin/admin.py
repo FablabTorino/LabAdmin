@@ -3,8 +3,16 @@ from labAdmin.models import *
 
 class MyModelAdmin(admin.ModelAdmin):
     pass
-admin.site.register(User)
-admin.site.register(Usertype)
+
+
+class UserAdmin(admin.ModelAdmin):
+    list_display = ('id','username','type','signup','subscription_end')
+
+class UsertypeAdmin(admin.ModelAdmin):
+    list_display = ('id','name','isAdmin','weekdays','hourStart', 'hourEnd','weekdays_permission_binary_str', 'havePermission')
+
+admin.site.register(User, UserAdmin)
+admin.site.register(Usertype,UsertypeAdmin)
 admin.site.register(Device)
 admin.site.register(Devicetype)
 admin.site.register(Permission)
