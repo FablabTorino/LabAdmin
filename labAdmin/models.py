@@ -2,11 +2,13 @@ from django.db import models
 from django.utils import timezone
 from django import forms
 
+from django.db import models
 
+# Create your models here.
 
 class User(models.Model):
     username=models.CharField(max_length=200)
-    type=models.ForeignKey('Usertype')
+    utype=models.ForeignKey('Usertype')
     signup=models.DateTimeField()
     subscriptionEnd=models.DateTimeField()
     needSubcription=models.BooleanField(default=True)
@@ -14,6 +16,58 @@ class User(models.Model):
 
     def subscription_end(self):
         return self.subscriptionEnd if self.needSubcription else "Don\'t need subcription"
+
+    def have_permission_now(self):
+        wdperm_bin = self.utype.weekdays_permission_binary()
+        n = timezone.now()
+        day_bin = 1 << n.weekday()
+        return True if day_bin & wdperm_bin == day_bin and self.utype.hourStart <= n.time() <= self.utype.hourEnd else False
+
+    def openDoor(self):
+        if self.have_permission_now():
+            opened = True
+            # Function For Open The Door
+        else:
+            opened = False
+
+        l = Logdoor(user=self,doorOpened=opened)
+        l.save()
+
+        return opened
+
+    # 
+    # Methods For Using Devices
+    #
+    #
+    # def have_permission_for_device(self, dev):
+    #     devtype = dev.dtype
+    #     try:
+    #         pp = Permission.objects.get(user=self, devicetype=devtype)
+    #         print(pp)
+    #         return pp.level
+    #     except Permission.DoesNotExist:
+    #         print("Does Not Exist Any Permission Object")
+    #         return 0
+    #
+    # def useDevice(self, dev):
+    #     if self.have_permission_now:
+    #         if self.haveself.have_permission_for_device(dev):
+    #             boot = dev.boot()
+    #             workstart = dev.start()
+    #             workfinish = dev.end()
+    #             shutdown = dev.shutdown()
+    #             hcost = dev.hourlyCost
+    #
+    #             Logdevice(user=user,device=dev, hourlyCost=hcost, bootDevice=boot, shutdownDevice=shutdown, startWork=workstart,finishWork=workfinish).save()
+    #
+    #             return True
+    #         else:
+    #             print("You haven\'t the permission for use this kind of devices")
+    #             return False
+    #     else:
+    #         print("You haven\'t the permission for use this kind of devices in this moment")
+    #         return False
+
 
     def __str__(self):
         return self.username
@@ -65,31 +119,42 @@ class Usertype(models.Model):
     def weekdays_permission_binary_str(self):
         return "{0:07b}".format(self.weekdays_permission_binary())
 
-    def havePermission(self):
-        wdperm_bin = self.weekdays_permission_binary()
-        n = timezone.now()
-        day_bin = 1 << n.weekday()
-        return True if day_bin & wdperm_bin == day_bin and self.hourStart <= n.time() <= self.hourEnd else False
-
     def __str__(self):
         return self.name
 
 class Device(models.Model):
     name=models.CharField(max_length=200)
-    type=models.ForeignKey('Devicetype')
+    dtype=models.ForeignKey('Devicetype')
+    hourlyCost=models.FloatField(default=0.0)
+
+    def __str__(self):
+        return self.name
 
 class Devicetype(models.Model):
-        name=models.CharField(max_length=200)
+    name=models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
 
 class Permission(models.Model):
-        level=models.IntegerField(default=0),
-        user=models.ForeignKey('User'),
-        devicetype=models.ForeignKey('Devicetype')
+    level=models.IntegerField(default=0)
+    user=models.ForeignKey('User', null=False)
+    devicetype=models.ForeignKey('Devicetype', null=False)
+
+    def __str__(self):
+        return "{0} - {1} - Permission Level: {2}".format(self.user,self.devicetype,self.level)
+
+    def changePermissionLevel(self, level):
+        self.level = level
+        self.save()
 
 class Logdoor(models.Model):
-    hour=models.DateTimeField()
+    hour=models.DateTimeField(default=timezone.now)
     doorOpened=models.BooleanField(default=False)
     user=models.ForeignKey('User')
+
+    def __str__(self):
+        return "{0} Enters in Fablab at {1} : {2}".format(self.user, self.hour.strftime("%Y-%m-%d %H:%M:%S"),"Permitted" if self.doorOpened else "Not Permitted")
 
 class Logdevice(models.Model):
     bootDevice=models.DateTimeField()
