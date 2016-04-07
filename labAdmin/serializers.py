@@ -7,4 +7,4 @@ class LogdoorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Logdoor
-        fields = ('id', 'hour', 'user','opened')
+        fields = ('id', 'hour', 'user','doorOpened')
