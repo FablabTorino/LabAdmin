@@ -21,21 +21,21 @@ class User(models.Model):
         wdperm_bin = self.utype.weekdays_permission_binary()
         n = timezone.now()
         day_bin = 1 << n.weekday()
-        return True if day_bin & wdperm_bin == day_bin and self.utype.hourStart <= n.time() <= self.utype.hourEnd else False
+        return day_bin & wdperm_bin == day_bin and self.utype.hourStart <= n.time() <= self.utype.hourEnd
 
-    def openDoor(self):
-        if self.have_permission_now():
-            opened = True
-            # Function For Open The Door
-        else:
-            opened = False
+    # def openDoor(self):
+    #     if self.have_permission_now():
+    #         opened = True
+    #         # Function For Open The Door
+    #     else:
+    #         opened = False
+    #
+    #     l = Logdoor(user=self,doorOpened=opened)
+    #     l.save()
+    #
+    #     return opened
 
-        l = Logdoor(user=self,doorOpened=opened)
-        l.save()
-
-        return opened
-
-    # 
+    #
     # Methods For Using Devices
     #
     #
@@ -146,12 +146,21 @@ class Permission(models.Model):
 
     def changePermissionLevel(self, level):
         self.level = level
-        self.save()
+
 
 class Logdoor(models.Model):
     hour=models.DateTimeField(default=timezone.now)
     doorOpened=models.BooleanField(default=False)
     user=models.ForeignKey('User')
+
+    def wasOpen(self):
+        return self.doorOpened
+
+    def openDoor(self):
+        self.doorOpened = True
+
+    def closeDoor(self):
+        self.doorOpened = False
 
     def __str__(self):
         return "{0} Enters in Fablab at {1} : {2}".format(self.user, self.hour.strftime("%Y-%m-%d %H:%M:%S"),"Permitted" if self.doorOpened else "Not Permitted")

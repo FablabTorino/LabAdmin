@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'labAdmin.apps.labAdminConfig'
+    'rest_framework',
+    'labAdmin.apps.labAdminConfig',
 ]
 
 MIDDLEWARE_CLASSES = [
