@@ -23,8 +23,10 @@ class LogdoorList(APIView):
         serializer = LogdoorSerializer(data=request.data)
         if serializer.is_valid():
             logdoor = serializer.save()
+            puoAprire = False
             if logdoor.user.have_permission_now():
                 logdoor.openDoor()
+                puoAprire = True
 
             logdoor.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
