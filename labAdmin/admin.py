@@ -15,7 +15,7 @@ class UserAdmin(admin.ModelAdmin):
         ('Subcription End Date', {'fields': ['subscriptionEnd']}),
         ('Need Subcription', {'fields': ['needSubcription']}),
     ]
-    list_display = ('username','id','utype','signup','subscription_end','nfcId')
+    list_display = ('username','id','utype','signup','subscription_end','nfcId', 'subscriptionExpired')
 
 class UsertypeAdmin(admin.ModelAdmin):
     list_display = ('name','id','isAdmin','weekdays','hourStart', 'hourEnd')
