@@ -28,5 +28,6 @@ urlpatterns = [
     url(r'^getpermission/', views.GetPermission.as_view()),
     url(r'^usedevice/', views.LogdeviceUse.as_view()),
     url(r'^usedevicelist/', views.LogdeviceUseList.as_view()),
+    url(r'^getToken/', views.GetTokenExample.as_view()),
     url(r'^users/', views.UserList.as_view()),
 ]

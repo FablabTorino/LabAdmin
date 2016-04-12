@@ -171,3 +171,8 @@ class LogdeviceUseList(APIView):
         users = Logdevice.objects.get(pk=1)
         serializer = LogdeviceSerializer(users)
         return Response(serializer.data)
+
+class GetTokenExample(APIView):
+
+    def get(self, request, format=None):
+        return Response({"Token":"tokenSTRING"})
