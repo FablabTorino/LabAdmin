@@ -30,4 +30,5 @@ urlpatterns = [
     url(r'^usedevicelist/', views.LogdeviceUseList.as_view()),
     url(r'^getToken/', views.GetTokenExample.as_view()),
     url(r'^users/', views.UserList.as_view()),
+    url(r'^repeat/', views.Repeat.as_view()),
 ]

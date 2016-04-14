@@ -67,8 +67,12 @@ class LogdoorEnter(APIView):
             return None
 
     def post(self, request, format=None):
-        user = self.get_user(nfc=request.POST.get("nfcId"))
+        user = self.get_user(nfc=request.data.get("nfcId"))
         if user is None:
+            print("\n\n\n\n\n")
+            print("ERRORE NFC")
+            print(request.POST.get("nfcId"))
+            print("\n\n\n\n\n")
             return Response(request.data, status=status.HTTP_400_BAD_REQUEST)
 
         canOpen = True if user.have_permission_now() else False
@@ -176,3 +180,9 @@ class GetTokenExample(APIView):
 
     def get(self, request, format=None):
         return Response({"Token":"tokenSTRING"})
+
+class Repeat(APIView):
+
+    def post(self, request, format=None):
+        print(request.data);
+        return Response(request.data,status=status.HTTP_200_OK);
