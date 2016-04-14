@@ -66,16 +66,25 @@ class LogdoorEnter(APIView):
         except User.DoesNotExist:
             return None
 
+    def get(self, request, format=None):
+        user = self.get_user(nfc=request.data.get("nfcId"))
+        if user is None:
+            print("\n\n\n\n\n")
+            print("ERRORE NFC")
+            print(request.data.get("nfcId"))
+            print("\n\n\n\n\n")
+            return Response(request.data, status=status.HTTP_400_BAD_REQUEST)
+
     def post(self, request, format=None):
         user = self.get_user(nfc=request.data.get("nfcId"))
         if user is None:
             print("\n\n\n\n\n")
             print("ERRORE NFC")
-            print(request.POST.get("nfcId"))
+            print(request.data.get("nfcId"))
             print("\n\n\n\n\n")
             return Response(request.data, status=status.HTTP_400_BAD_REQUEST)
 
-        canOpen = True if user.have_permission_now() else False
+        canOpen = user.have_permission_now()
         logdoor=Logdoor(user=user,doorOpened=canOpen)
         logdoor.save()
         return Response({'username': user.username,'hour':logdoor.hour, 'open': canOpen}, status=status.HTTP_201_CREATED)
