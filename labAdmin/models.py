@@ -24,7 +24,7 @@ class TimeSlot(models.Model):
         return self.weekday_start <= n.weekday <= self.weekday_end and self.hour_start <= n.time <= self.hour_end
 
     def __str__(self):
-        return "%s - %s, %s - %s"%(self.WEEKDAY_CHOICES[self.weekday_start-1][1],self.WEEKDAY_CHOICES[self.weekday_end-1][1],self.hour_start,self.hour_end)
+        return "%s: %s - %s, %s - %s"%(self.name, self.WEEKDAY_CHOICES[self.weekday_start-1][1],self.WEEKDAY_CHOICES[self.weekday_end-1][1],self.hour_start,self.hour_end)
 
 class User(models.Model):
     name=models.CharField(max_length=200)
