@@ -3,13 +3,16 @@ from django.utils import timezone
 
 # Create your models here.
 
+class TimeSlot(models.Model):
+
+
 class User(models.Model):
     name=models.CharField(max_length=200)
     firstSignup = models.DateField()
     lastSignup = models.DateField()
     endSubcription = models.DateField()
     needSubcription = models.BooleanField(default=True)
-    nfcId=models.IntegerField(unique=True, null=True)
+    nfcId=models.BigIntegerField(unique=True, null=True)
 
     # define Many-To-Many fields
     groups=models.ManyToManyField('Group')
