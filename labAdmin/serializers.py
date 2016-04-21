@@ -1,6 +1,19 @@
-from labAdmin.models import *
+from labAdmin2.models import *
 
 from rest_framework import serializers
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('id','name')
+
+class LogAccessSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = LogAccess
+        fields = ('user','datetime','opened')
 
 
 # class LogdoorSerializer(serializers.ModelSerializer):
@@ -28,31 +41,24 @@ from rest_framework import serializers
 #         model = User
 #         fields = ('id', 'username','utype', 'signup', 'subscriptionEnd', 'needSubcription', 'nfcId')
 
-class PermissionSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Permission
-        fields = ("id","user","devicetype","level")
-
-
-class LogdeviceSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Logdevice
-        fields = (
-            'id'
-            ,'user'
-            ,'device'
-            ,'bootDevice'
-            ,'shutdownDevice'
-            ,'startWork'
-            ,'finishWork'
-            ,'hourlyCost'
-        )
-
-
-class UserSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = ('id', 'username','signup')
+# class PermissionSerializer(serializers.ModelSerializer):
+#
+#     class Meta:
+#         model = Permission
+#         fields = ("id","user","devicetype","level")
+#
+#
+# class LogdeviceSerializer(serializers.ModelSerializer):
+#
+#     class Meta:
+#         model = Logdevice
+#         fields = (
+#             'id'
+#             ,'user'
+#             ,'device'
+#             ,'bootDevice'
+#             ,'shutdownDevice'
+#             ,'startWork'
+#             ,'finishWork'
+#             ,'hourlyCost'
+#         )
