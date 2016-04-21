@@ -4,7 +4,27 @@ from django.utils import timezone
 # Create your models here.
 
 class TimeSlot(models.Model):
+    WEEKDAY_CHOICES = (
+        (1,'Monday'),
+        (2,'Tuesday'),
+        (3,'Wednesday'),
+        (4,'Thursday'),
+        (5,'Friday'),
+        (6,'Saturday'),
+        (7,'Sunday')
+    )
+    name=models.CharField(max_length=50)
+    weekday_start=models.SmallIntegerField(default=0, choices=WEEKDAY_CHOICES)
+    weekday_end=models.SmallIntegerField(default=0, choices=WEEKDAY_CHOICES)
+    hour_start=models.TimeField()
+    hour_end=models.TimeField()
 
+    def have_permission_now(self):
+        n = timezone.now()
+        return self.weekday_start <= n.weekday <= self.weekday_end and self.hour_start <= n.time <= self.hour_end
+
+    def __str__(self):
+        return "%s - %s, %s - %s"%(self.WEEKDAY_CHOICES[self.weekday_start][1],self.WEEKDAY_CHOICES[self.weekday_end][1],self.hour_start,self.hour_end)
 
 class User(models.Model):
     name=models.CharField(max_length=200)
@@ -23,31 +43,14 @@ class User(models.Model):
     def subscriptionExpired(self):
         return self.needSubcription and self.endSubcription < timezone.now()
 
-    # def listRoles(self):
-    #     rr = Role.objects.filter(group__user=self,role_kind=0,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
-    #     if rr == True:
-    #         print(len(rr))
-    #     else:
-    #         print("VUOTO")
-    #     print(len(rr))
-    #
-    #     print("\nEND\n")
-
-
     def can_open_door_now(self):
         # Define groups and role
-        rr = Role.objects.filter(group__user=self,role_kind=0,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
-        for r in rr:
-            if r.can_open_door_now():
-                return True
-        return False
+        n = timezone.now()
+        return len(TimeSlot.objects.filter(role__group__user=self,roles__role_kind=0,roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def can_use_device_now(self, device):
-        rr = Role.objects.filter(role_kind=1, category_device=device.category_device,group__user=self,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
-        for r in rr:
-            if r.can_use_device_now():
-                return True
-        return False
+        n = timezone.now()
+        return len(TimeSlot.objects.filter(role__group__user=self,roles__role_kind=1, role__category_device=device.category_device, roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def __str__(self):
         return self.name
@@ -64,28 +67,14 @@ class Group(models.Model):
     roles=models.ManyToManyField('Role')
 
 
-    # def listRoles(self):
-    #     rr = Role.objects.filter(group=self,role_kind=0,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
-    #     if rr == True:
-    #         print(len(rr))
-    #     else:
-    #         print("VUOTO")
-    #
-    #     print("\nEND\n")
-
     def can_open_door_now(self):
-        rr = Role.objects.filter(group=self,role_kind=0,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
-        for r in rr:
-            if r.can_open_door_now():
-                return True
-        return False
+        # Define groups and role
+        n = timezone.now()
+        return len(TimeSlot.objects.filter(role__group=self,roles__role_kind=0,roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def can_use_device_now(self, device):
-        rr = Role.objects.filter(role_kind=1, category_device=device.category_device,group__user=self,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
-        for r in rr:
-            if r.can_open_door_now():
-                return True
-        return False
+        n = timezone.now()
+        return len(TimeSlot.objects.filter(role__group=self,roles__role_kind=1, role__category_device=device.category_device, roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def __str__(self):
         return "%s" % (self.name)
@@ -98,83 +87,23 @@ class Role(models.Model):
     )
 
     name=models.CharField(max_length=50)
-    hour_start=models.TimeField()
-    hour_end=models.TimeField()
-    monday=models.BooleanField(default=False)
-    tuesday=models.BooleanField(default=False)
-    wednesday=models.BooleanField(default=False)
-    thursday=models.BooleanField(default=False)
-    friday=models.BooleanField(default=False)
-    saturday=models.BooleanField(default=False)
-    sunday=models.BooleanField(default=False)
+
     # weekday=models.Week
     role_kind=models.IntegerField(choices=ROLE_KIND_CHOICES)
+    time_slots=models.ManyToManyField(TimeSlot)
     valid=models.BooleanField(default=True)
 
     # define Many-To-Many Fieds
     category_devices=models.ManyToManyField('Category_Device',blank=True)
 
     def can_open_door_now(self):
-        if self.role_kind == 0:
-            now=timezone.now()
-            day=now.weekday()
-            hour=now.time()
-
-            if day == 1:
-                daypermission=self.monday
-            elif day==2:
-                daypermission=self.tuesday
-            elif day==3:
-                daypermission=self.wednesday
-            elif day==4:
-                daypermission=self.thursday
-            elif day==5:
-                daypermission=self.friday
-            elif day==6:
-                daypermission=self.saturday
-            elif day==7:
-                daypermission=self.sunday
-            else:
-                daypermission=False
-
-            return daypermission and self.hour_start <= hour <= self.hour_end and self.valid
-        else:
-            return False
+        # Define groups and role
+        n = timezone.now()
+        return len(TimeSlot.objects.filter(role=self, roles__role_kind=0,roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def can_use_device_now(self, device):
-        """
-
-        """
-        if self.role_kind == 1:
-            try:
-                p = self.category_devices.objects.get(pk=device.category_device)
-            except Category_Device.DoesNotExist:
-                return False
-
-            now=timezone.now()
-            day=now.weekday()
-            hour=now.time()
-
-            if day == 1:
-                daypermission=self.monday
-            elif day==2:
-                daypermission=self.tuesday
-            elif day==3:
-                daypermission=self.wednesday
-            elif day==4:
-                daypermission=self.thursday
-            elif day==5:
-                daypermission=self.friday
-            elif day==6:
-                daypermission=self.saturday
-            elif day==7:
-                daypermission=self.sunday
-            else:
-                daypermission=False
-
-            return daypermission and self.hourStart <= hour <= self.hourEnd and self.valid
-        else:
-            return False
+        n = timezone.now()
+        return len(TimeSlot.objects.filter(role=self, roles__role_kind=1, role__category_device=device.category_device, roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def __str__(self):
         return "%s - %s" % (self.name, self.ROLE_KIND_CHOICES[self.role_kind][1])
@@ -217,4 +146,4 @@ class LogDevice(models.Model):
     inWorking=models.BooleanField(default=True)
 
     def __str__(self):
-        return "user: %s\ndevice: %s\nboot: %s\nstart: %s\ninWorking: %s\nHourlyCost: %f" %(self.user, self.delete, self.bootDevice, self.startWork, "yes" if self.inWorking else "no\nshutdown: %s\nfinish: %s"%(self.shutdownDevice, self.finishWork), self.hourlyCost)
+        return "user: %s\ndevice: %s\nboot: %s\nstart: %s\ninWorking: %s\nHourlyCost: %f" %(self.user, self.device, self.bootDevice, self.startWork, "yes" if self.inWorking else "no\nshutdown: %s\nfinish: %s"%(self.shutdownDevice, self.finishWork), self.hourlyCost)
