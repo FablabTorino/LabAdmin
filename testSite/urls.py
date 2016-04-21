@@ -17,12 +17,11 @@ from django.conf.urls import include, url
 from django.contrib import admin
 
 from labAdmin import views
-from labAdmin2 import views as views2
 
 urlpatterns = [
     # url(r'^labAdmin/', include('labAdmin.urls')),
     url(r'^admin/', admin.site.urls),
-    url(r'^labAdmin/opendoorbynfc/$', views2.OpenDoorByNFC.as_view()),
+    url(r'^labAdmin/opendoorbynfc/$', views.OpenDoorByNFC.as_view()),
     # url(r'^nfc/(?P<nfc>.+)/$', views.NfcLogin.as_view()),
     # url(r'^nfc/', views.NfcLogin.as_view()),
     # url(r'^getpermission/', views.GetPermission.as_view()),

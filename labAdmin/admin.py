@@ -1,5 +1,5 @@
 from django.contrib import admin
-from labAdmin2.models import *
+from labAdmin.models import *
 
 # Register your models here.
 admin.site.register(User)

@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'rest_framework',
     # 'rest_framework.authtoken',
     'labAdmin.apps.labAdminConfig',
-    'labAdmin2.apps.Labadmin2Config',
 ]
 
 # REST_FRAMEWORK = {

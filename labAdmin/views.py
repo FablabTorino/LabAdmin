@@ -1,7 +1,7 @@
 from django.http import HttpResponse, Http404
 
-from labAdmin2.serializers import *
-from labAdmin2.models import *
+from labAdmin.serializers import *
+from labAdmin.models import *
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -45,5 +45,5 @@ class OpenDoorByNFC(APIView):
             if g.name.lower().find('fablab'):
                 utype = 'fablab'
                 break
-        print("{\"name\":\"%s\", \"type\": \"%s\", \"datetime\":%s, \"open\": %s}"%(u.name, utype, l.datetime, l.opened)):
+        print("{\"name\":\"%s\", \"type\": \"%s\", \"datetime\":%s, \"open\": %s}"%(u.name, utype, l.datetime, l.opened))
         return Response("{\"name\":\"%s\", \"type\": \"%s\", \"datetime\":%s, \"open\": %s}"%(u.name, utype, l.datetime, l.opened),status=status.HTTP_201_CREATED)

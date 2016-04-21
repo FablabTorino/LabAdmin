@@ -1,4 +1,4 @@
-from labAdmin2.models import *
+from labAdmin.models import *
 
 from rest_framework import serializers
 

@@ -20,16 +20,29 @@ class User(models.Model):
     def subscriptionExpired(self):
         return self.needSubcription and self.endSubcription < timezone.now()
 
+    # def listRoles(self):
+    #     rr = Role.objects.filter(group__user=self,role_kind=0,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
+    #     if rr == True:
+    #         print(len(rr))
+    #     else:
+    #         print("VUOTO")
+    #     print(len(rr))
+    #
+    #     print("\nEND\n")
+
+
     def can_open_door_now(self):
         # Define groups and role
-        for g in self.groups.all():
-            if g.can_open_door_now():
+        rr = Role.objects.filter(group__user=self,role_kind=0,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
+        for r in rr:
+            if r.can_open_door_now():
                 return True
         return False
 
-    def can_user_device_now(self, device):
-        for r in self.groups.all():
-            if r.can_open_door_now():
+    def can_use_device_now(self, device):
+        rr = Role.objects.filter(role_kind=1, category_device=device.category_device,group__user=self,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
+        for r in rr:
+            if r.can_use_device_now():
                 return True
         return False
 
@@ -44,19 +57,29 @@ class Category_Device(models.Model):
 
 class Group(models.Model):
     name=models.CharField(max_length=50)
-    admin = models.BooleanField(default=False)
-    sync = models.BooleanField(default=False)
     # define Many-To-Many fields
     roles=models.ManyToManyField('Role')
 
+
+    # def listRoles(self):
+    #     rr = Role.objects.filter(group=self,role_kind=0,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
+    #     if rr == True:
+    #         print(len(rr))
+    #     else:
+    #         print("VUOTO")
+    #
+    #     print("\nEND\n")
+
     def can_open_door_now(self):
-        for r in self.roles.all():
+        rr = Role.objects.filter(group=self,role_kind=0,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
+        for r in rr:
             if r.can_open_door_now():
                 return True
         return False
 
-    def can_user_device_now(self, device):
-        for r in self.roles.all():
+    def can_use_device_now(self, device):
+        rr = Role.objects.filter(role_kind=1, category_device=device.category_device,group__user=self,valid=True,hour_start__lte=timezone.now(),hour_end__gte=timezone.now())
+        for r in rr:
             if r.can_open_door_now():
                 return True
         return False
@@ -81,6 +104,7 @@ class Role(models.Model):
     friday=models.BooleanField(default=False)
     saturday=models.BooleanField(default=False)
     sunday=models.BooleanField(default=False)
+    # weekday=models.Week
     role_kind=models.IntegerField(choices=ROLE_KIND_CHOICES)
     valid=models.BooleanField(default=True)
 
@@ -115,6 +139,9 @@ class Role(models.Model):
             return False
 
     def can_use_device_now(self, device):
+        """
+
+        """
         if self.role_kind == 1:
             try:
                 p = self.category_devices.objects.get(pk=device.category_device)
