@@ -4,6 +4,9 @@ from django.utils import timezone
 # Create your models here.
 
 class TimeSlot(models.Model):
+    """
+    TimeSlots are assigned to Roles
+    """
     WEEKDAY_CHOICES = (
         (1,'Monday'),
         (2,'Tuesday'),
@@ -27,6 +30,13 @@ class TimeSlot(models.Model):
         return "%s: %s - %s, %s - %s"%(self.name, self.WEEKDAY_CHOICES[self.weekday_start-1][1],self.WEEKDAY_CHOICES[self.weekday_end-1][1],self.hour_start,self.hour_end)
 
 class User(models.Model):
+    """
+    Users have the following feature:
+    Name
+    FirstSignup
+    LastSignup
+    EndSubcription
+    """
     name=models.CharField(max_length=200)
     firstSignup = models.DateField()
     lastSignup = models.DateField()
@@ -46,11 +56,11 @@ class User(models.Model):
     def can_open_door_now(self):
         # Define groups and role
         n = timezone.now()
-        return len(TimeSlot.objects.filter(role__group__user=self,roles__role_kind=0,roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+        return len(TimeSlot.objects.filter(role__group__user=self,role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def can_use_device_now(self, device):
         n = timezone.now()
-        return len(TimeSlot.objects.filter(role__group__user=self,roles__role_kind=1, role__category_device=device.category_device, roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+        return len(TimeSlot.objects.filter(role__group__user=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def __str__(self):
         return self.name
@@ -66,15 +76,14 @@ class Group(models.Model):
     # define Many-To-Many fields
     roles=models.ManyToManyField('Role')
 
-
     def can_open_door_now(self):
         # Define groups and role
         n = timezone.now()
-        return len(TimeSlot.objects.filter(role__group=self,roles__role_kind=0,roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+        return len(TimeSlot.objects.filter(role__group=self,role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def can_use_device_now(self, device):
         n = timezone.now()
-        return len(TimeSlot.objects.filter(role__group=self,roles__role_kind=1, role__category_device=device.category_device, roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+        return len(TimeSlot.objects.filter(role__group=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def __str__(self):
         return "%s" % (self.name)
@@ -88,7 +97,6 @@ class Role(models.Model):
 
     name=models.CharField(max_length=50)
 
-    # weekday=models.Week
     role_kind=models.IntegerField(choices=ROLE_KIND_CHOICES)
     time_slots=models.ManyToManyField(TimeSlot)
     valid=models.BooleanField(default=True)
@@ -99,11 +107,11 @@ class Role(models.Model):
     def can_open_door_now(self):
         # Define groups and role
         n = timezone.now()
-        return len(TimeSlot.objects.filter(role=self, roles__role_kind=0,roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+        return len(TimeSlot.objects.filter(role=self, role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def can_use_device_now(self, device):
         n = timezone.now()
-        return len(TimeSlot.objects.filter(role=self, roles__role_kind=1, role__category_device=device.category_device, roles__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+        return len(TimeSlot.objects.filter(role=self, role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
 
     def __str__(self):
         return "%s - %s" % (self.name, self.ROLE_KIND_CHOICES[self.role_kind][1])
