@@ -45,27 +45,3 @@ class OpenDoorByNFC(APIView):
         utype="fablab" if len(Group.objects.filter(group__user=u,name__icontains='Fablab')) > 0 else "other"
 
         return Response("{\"name\":\"%s\", \"type\": \"%s\", \"datetime\":%s, \"open\": %s}"%(u.name, utype, l.datetime, l.opened),status=status.HTTP_201_CREATED)
-
-
-class UserAddScript(APIView):
-
-    def post(self, request, format=None):
-        users = request.data.get("users")
-        t = timezone.now()
-        g = Group.objects.get(pk=4)
-        i = 0
-        k = 0
-        for u in users:
-            k += 1
-            try:
-                tmp = User.objects.get(name=u["name"].title(),nfcId=u["nfcId"])
-            except User.DoesNotExist:
-                i +=  1
-                tmp = User(name=u["name"].title(),nfcId=u["nfcId"], lastSignup=t,firstSignup=t,endSubcription="2016-12-31")
-                tmp.save()
-                tmp.groups.add(g)
-                tmp.save()
-
-
-
-        return HttpResponse("%d su %d" %(i,k))
