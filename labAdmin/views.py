@@ -19,11 +19,15 @@ def get_user_by_nfc_or_None(nfc):
 
 class LoginByNFC(APIView):
     """
-    API For Login with Nfc (return user information)
+    API For Login (return user informations)
+    In order to use this API send a POST with a value named 'nfcId'
+    The return value is a json array with user informations
+
+    If the nfc code isn't correct or valid, the API save in 'LogError' a new error that contains the error then return an error message to client (HTTP_400_BAD_REQUEST)
     """
 
     def post(self, request, format=None):
-        nfc = request.data.get('nfcId', 'Login')
+        nfc = request.data.get('nfcId')
         u = get_user_by_nfc_or_None(nfc=nfc)
         if u is None:
             LogError(description="Api: Login By NFC - NFC not Valid",nfc=nfc).save()
@@ -32,7 +36,15 @@ class LoginByNFC(APIView):
 
 class OpenDoorByNFC(APIView):
     """
-    API For Opend Door with Nfc (return log information)
+    API For Opening the Door with Nfc (return log information)
+    In order to use this API send a POST with a value named 'nfcId'
+    The return value is a json array with:
+        'name': name of user
+        'utype': type of user ('fablab' or 'other')
+        'datetime': datetime objects of the current time
+        'open': return if the user can open the door or not
+
+    If the nfc code isn't correct or valid, the API save in 'LogError' a new error that contains the error then return an error message to client (HTTP_400_BAD_REQUEST)
     """
     def post(self,request,format=None):
         nfc = request.data.get('nfcId')
@@ -42,6 +54,6 @@ class OpenDoorByNFC(APIView):
             return Response("",status=status.HTTP_400_BAD_REQUEST)
         l=LogAccess(user=u,opened=u.can_open_door_now())
         l.save()
-        utype="fablab" if len(Group.objects.filter(group__user=u,name__icontains='Fablab')) > 0 else "other"
+        utype="fablab" if len(Group.objects.filter(groups__user=u,name__icontains='Fablab')) > 0 else "other"
 
         return Response("{\"name\":\"%s\", \"type\": \"%s\", \"datetime\":%s, \"open\": %s}"%(u.name, utype, l.datetime, l.opened),status=status.HTTP_201_CREATED)
