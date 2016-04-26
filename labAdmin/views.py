@@ -56,4 +56,4 @@ class OpenDoorByNFC(APIView):
         l.save()
         utype="fablab" if len(Group.objects.filter(user=u,name__icontains='Fablab')) > 0 else "other"
 
-        return Response("{\"name\":\"%s\", \"type\": \"%s\", \"datetime\":\"%s\", \"open\": %s}"%(u.name, utype, l.datetime, l.opened),status=status.HTTP_201_CREATED)
+        return Response("{\"name\":\"%s\", \"type\": \"%s\", \"datetime\":\"%s\", \"open\": %s}"%(u.name, utype, l.datetime.strftime("%Y-%m-%d %H:%M:%S"), l.opened),status=status.HTTP_201_CREATED)
