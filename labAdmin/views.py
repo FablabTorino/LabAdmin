@@ -54,6 +54,6 @@ class OpenDoorByNFC(APIView):
             return Response("",status=status.HTTP_400_BAD_REQUEST)
         l=LogAccess(user=u,opened=u.can_open_door_now())
         l.save()
-        utype="fablab" if len(Group.objects.filter(groups__user=u,name__icontains='Fablab')) > 0 else "other"
+        utype="fablab" if len(Group.objects.filter(user=u,name__icontains='Fablab')) > 0 else "other"
 
         return Response("{\"name\":\"%s\", \"type\": \"%s\", \"datetime\":%s, \"open\": %s}"%(u.name, utype, l.datetime, l.opened),status=status.HTTP_201_CREATED)
