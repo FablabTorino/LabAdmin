@@ -99,7 +99,7 @@ class Group(models.Model):
             return len(TimeSlot.objects.filter(role__group=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
         except:
             # Any Exception return False
-            return Faòse
+            return False
 
     def __str__(self):
         return "%s" % (self.name)
