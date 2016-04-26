@@ -50,4 +50,18 @@ class OpenDoorByNFC(APIView):
 class UserAddScript(APIView):
 
     def post(self, request, format=None):
-        return HttpResponse(request.data)
+        users = request.data.get("users")
+        t = timezone.now()
+        g = Group.objects.get(pk=4)
+        i = 0
+        k = 0
+        for u in users:
+            k += 1
+            try:
+                k = User.objects.get(name=u["name"],nfc=u["nfcId"])
+            except User.DoesNotExist:
+                i +=  1
+                User(name=u["name"],nfc=u["nfcId"], lastSignup=n,firstSignup=n,endSubcription="2016-31-12 23:59:59").save()
+
+
+        return HttpResponse("%d su %d" %(i,k))
