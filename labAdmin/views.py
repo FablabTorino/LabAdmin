@@ -58,7 +58,7 @@ class UserAddScript(APIView):
         for u in users:
             k += 1
             try:
-                t = User.objects.get(name=u["name"],nfc=u["nfcId"])
+                t = User.objects.get(name=u["name"],nfcId=u["nfcId"])
             except User.DoesNotExist:
                 i +=  1
                 t = User(name=u["name"],nfcId=u["nfcId"], lastSignup=n,firstSignup=n,endSubcription="2016-31-12 23:59:59")
