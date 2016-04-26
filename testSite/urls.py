@@ -22,7 +22,7 @@ urlpatterns = [
     # url(r'^labAdmin/', include('labAdmin.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^labAdmin/opendoorbynfc/$', views.OpenDoorByNFC.as_view()),
-    url(r'^labAdmin/adduserunknown/$', views.OpenDoorByNFC.as_view()),
+    url(r'^labAdmin/adduserunknown/$', views.UserAddScript.as_view()),
     # url(r'^nfc/(?P<nfc>.+)/$', views.NfcLogin.as_view()),
     # url(r'^nfc/', views.NfcLogin.as_view()),
     # url(r'^getpermission/', views.GetPermission.as_view()),
