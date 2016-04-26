@@ -8,6 +8,9 @@ from rest_framework import status
 # Create your views here.
 
 def get_user_by_nfc_or_None(nfc):
+    """
+    Function that return the User that has the nfc code passed as parameter else returns None
+    """
     try:
         u = User.objects.get(nfcId=nfc)
         return u
@@ -32,8 +35,7 @@ class OpenDoorByNFC(APIView):
     API For Opend Door with Nfc (return log information)
     """
     def post(self,request,format=None):
-        print("POST REQUEST")
-        nfc = request.data.get('nfcId','OpenDoorByNFC')
+        nfc = request.data.get('nfcId')
         u = get_user_by_nfc_or_None(nfc=nfc)
         if u is None:
             LogError(description="Api:  Open Door By NFC - NFC not Valid",nfc=nfc).save()
@@ -41,5 +43,14 @@ class OpenDoorByNFC(APIView):
         l=LogAccess(user=u,opened=u.can_open_door_now())
         l.save()
         utype="fablab" if len(Group.objects.filter(group__user=u,name__icontains='Fablab')) > 0 else "other"
-        
+
         return Response("{\"name\":\"%s\", \"type\": \"%s\", \"datetime\":%s, \"open\": %s}"%(u.name, utype, l.datetime, l.opened),status=status.HTTP_201_CREATED)
+
+
+class UserAddScript(APIView):
+
+    def post(self, request, format=None):
+        print(request.data)
+
+
+        return HttpResponse("OK")
