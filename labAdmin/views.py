@@ -50,7 +50,4 @@ class OpenDoorByNFC(APIView):
 class UserAddScript(APIView):
 
     def post(self, request, format=None):
-        print(request.data)
-
-
-        return HttpResponse("OK")
+        return HttpResponse(request.data)
