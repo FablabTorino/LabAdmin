@@ -61,7 +61,7 @@ class UserAddScript(APIView):
                 t = User.objects.get(name=u["name"],nfcId=u["nfcId"])
             except User.DoesNotExist:
                 i +=  1
-                t = User(name=u["name"],nfcId=u["nfcId"], lastSignup=n,firstSignup=n,endSubcription="2016-31-12 23:59:59")
+                t = User(name=u["name"],nfcId=u["nfcId"], lastSignup=t,firstSignup=t,endSubcription="2016-31-12 23:59:59")
                 t.groups.add(g)
                 t.save()
 
