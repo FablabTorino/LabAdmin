@@ -153,7 +153,6 @@ class Payment(models.Model):
     value=models.FloatField(default=0.0)
     user=models.ForeignKey(User)
 
-
 class LogError(models.Model):
     description=models.CharField(max_length=200)
     nfc=models.IntegerField(default='',blank=True)
@@ -176,6 +175,10 @@ class LogDevice(models.Model):
     finishWork=models.DateTimeField()
     shutdownDevice=models.DateTimeField()
     inWorking=models.BooleanField(default=True)
+
+    def stop(self):
+        n = timezone.now()
+        self.finishWork = self.shutdownDevice = n
 
     def __str__(self):
         return "user: %s\ndevice: %s\nboot: %s\nstart: %s\ninWorking: %s\nHourlyCost: %f" %(self.user, self.device, self.bootDevice, self.startWork, "yes" if self.inWorking else "no\nshutdown: %s\nfinish: %s"%(self.shutdownDevice, self.finishWork), self.hourlyCost)
