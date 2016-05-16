@@ -99,12 +99,14 @@ class UseDevice(APIView):
                 if len(log) > 0:
                     for ll in log:
                         ll.stop()
-                        ll.save
+                        ll.save()
 
                 n = timezone.now()
                 newLog = LogDevice(device=d,user=u, startWork=n,bootDevice=n,shutdownDevice=n - timezone.timedelta("-10 seconds"),finishWork=n - timezone.timedelta("-10 seconds"),hourlyCost=d.hourlyCost)
                 newLog.save()
                 return Response({"logId":n.id,"cost":n.hourlyCost,"canUse":True},status=status.HTTP_201_CREATED)
+            except:
+                return Response("Error during processing", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             LogError(description="Api: Use Device - the user %d can't use the device %d" % (u.id, d.id))
             return Response("",status=status.HTTP_400_BAD_REQUEST)
