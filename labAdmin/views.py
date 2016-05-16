@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-form labAdmin import functions
+from labAdmin import functions
 # Create your views here.
 
 class LoginByNFC(APIView):
