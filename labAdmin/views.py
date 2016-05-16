@@ -21,7 +21,7 @@ class LoginByNFC(APIView):
 
     def post(self, request, format=None):
         nfc = request.data.get('nfcId')
-        u = get_user_by_nfc_or_None(nfc=nfc)
+        u = functions.get_user_by_nfc_or_None(nfc=nfc)
         if u is None:
             LogError(description="Api: Login By NFC - NFC not Valid",code=nfc).save()
             return Response("",status=status.HTTP_400_BAD_REQUEST)
@@ -42,7 +42,7 @@ class OpenDoorByNFC(APIView):
     """
     def post(self,request,format=None):
         nfc = request.data.get('nfcId')
-        u = get_user_by_nfc_or_None(nfc=nfc)
+        u = functions.get_user_by_nfc_or_None(nfc=nfc)
         if u is None:
             LogError(description="Api: Open Door By NFC - NFC not Valid",code=nfc).save()
             return Response("",status=status.HTTP_400_BAD_REQUEST)
@@ -66,7 +66,7 @@ class GetDeviceByMac(APIView):
     """
     def post(self, request, format=None):
         mac = request.data.get("mac")
-        d = get_device_by_mac_or_None(mac=mac)
+        d = functions.get_device_by_mac_or_None(mac=mac)
 
         if d is None:
             LogError(description="Api: Get Device By Mac - Mac not valid",code=mac)
@@ -82,13 +82,13 @@ class UseDevice(APIView):
         'userId': the id of user
     """
     def post(self,request,format=None):
-        u = get_user_or_None(id=request.data.get('userId'))
+        u = functions.get_user_or_None(id=request.data.get('userId'))
 
         if u is None:
             LogError(description="Api: Use Device - user ID not valid",nfc=request.data.get('userId'))
             return Response("",status=status.HTTP_400_BAD_REQUEST)
 
-        d = get_device_or_None(id=request.data.get('deviceId'))
+        d = functions.get_device_or_None(id=request.data.get('deviceId'))
 
         if d is None:
             LogError(description="Api: Use Device - device ID not valid",code=request.data.get('deviceId'))
