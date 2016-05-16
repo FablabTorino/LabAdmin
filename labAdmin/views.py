@@ -131,20 +131,20 @@ class tempUpdateUser(APIView):
             u = User.objects.get(name=n, nfcId=nfc)
             u.groups.remove(unk)
             if t == 'Arduino':
-                user.groups.add(ard)
-                user.needSubcription = False
+                u.groups.add(ard)
+                u.needSubcription = False
             elif t == 'Ordinario':
-                user.groups.add(fu)
-                user.needSubcription = True
+                u.groups.add(fu)
+                u.needSubcription = True
             elif t == 'Host' or t == 'Full':
-                user.groups.add(fh)
-                user.needSubcription = True
+                u.groups.add(fh)
+                u.needSubcription = True
             elif t == 'Direttivo':
-                user.groups.add(fe)
-                user.needSubcription = True
+                u.groups.add(fe)
+                u.needSubcription = True
             else:
                 ee += 1
-            user.save()
+            u.save()
 
 
 
