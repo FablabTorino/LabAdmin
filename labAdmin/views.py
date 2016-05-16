@@ -113,6 +113,9 @@ class UseDevice(APIView):
 
 class tempUpdateUser(APIView):
     def post(self, request, format=None):
+        users = request.data.get('users')
+        return Response(users[0]['name'])
+        return;
         u = request.data.get(name).title()
         nfc = request.data.get(nfc)
         t = request.data.get(type).title()
