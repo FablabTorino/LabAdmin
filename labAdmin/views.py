@@ -120,7 +120,8 @@ class tempUpdateUser(APIView):
         fh = Group.objects.get(name="Fablab Host")
         fe = Group.objects.get(name="Fablab Executive")
         fu = Group.objects.get(name="Fablab User")
-
+        e = 0
+        ee = 0
 
         for uu in users:
             n = uu['name']
@@ -141,9 +142,10 @@ class tempUpdateUser(APIView):
                 elif t == 'Direttivo':
                     user.groups.add(fe)
                     user.needSubcription = True
-
+                else:
+                    ee += 1
                 user.save()
             except:
-                1
+                e+=1
 
-        return Response("Updated")
+        return Response("Updated except %d, %d" % (e,ee))
