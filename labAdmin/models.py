@@ -144,6 +144,7 @@ class Device(models.Model):
     name=models.CharField(max_length=100)
     hourlyCost=models.FloatField(default=0.0)
     category_device=models.ForeignKey('Category_Device')
+    mac=models.CharField(max_length=30)
 
     def __str__(self):
         return "%010d - %s" %(self.id, self.name)
