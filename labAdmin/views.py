@@ -127,25 +127,25 @@ class tempUpdateUser(APIView):
             n = uu['name']
             nfc = uu['nfc']
             t = uu['type'].title()
-            try:
-                u = User.objects.get(name=n, nfcId=nfc)
-                u.groups.remove(unk)
-                if t == 'Arduino':
-                    user.groups.add(ard)
-                    user.needSubcription = False
-                elif t == 'Ordinario':
-                    user.groups.add(fu)
-                    user.needSubcription = True
-                elif t == 'Host' or t == 'Full':
-                    user.groups.add(fh)
-                    user.needSubcription = True
-                elif t == 'Direttivo':
-                    user.groups.add(fe)
-                    user.needSubcription = True
-                else:
-                    ee += 1
-                user.save()
-            except:
-                e+=1
+
+            u = User.objects.get(name=n, nfcId=nfc)
+            u.groups.remove(unk)
+            if t == 'Arduino':
+                user.groups.add(ard)
+                user.needSubcription = False
+            elif t == 'Ordinario':
+                user.groups.add(fu)
+                user.needSubcription = True
+            elif t == 'Host' or t == 'Full':
+                user.groups.add(fh)
+                user.needSubcription = True
+            elif t == 'Direttivo':
+                user.groups.add(fe)
+                user.needSubcription = True
+            else:
+                ee += 1
+            user.save()
+
+
 
         return Response("Updated except %d, %d" % (e,ee))
