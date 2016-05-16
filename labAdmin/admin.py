@@ -19,7 +19,7 @@ class RoleAdmin(admin.ModelAdmin):
 admin.site.register(Role, RoleAdmin)
 
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('name',)
+    list_display = ('name','roles',)
     ordering = ('name',)
 
 admin.site.register(Group, GroupAdmin)
@@ -60,7 +60,7 @@ admin.site.register(LogDevice, LogDeviceAdmin)
 
 class LogErrorAdmin(admin.ModelAdmin):
     list_display = ('datetime', 'description', 'code',)
-    ordering = ('-bootDevice','-startWork',)
+    ordering = ('-datetime',)
 
 admin.site.register(LogError, LogErrorAdmin)
 
