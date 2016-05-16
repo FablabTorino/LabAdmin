@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+import decimal
 
 # Create your models here.
 
@@ -73,8 +74,11 @@ class User(models.Model):
     def __str__(self):
         return self.name
 
-class Category_Device(models.Model):
+class Category(models.Model):
     name=models.CharField(max_length=50)
+
+    class Meta:
+        verbose_name_plural = "categories"
 
     def __str__(self):
         return "%s"%(self.name)
@@ -118,7 +122,7 @@ class Role(models.Model):
     valid=models.BooleanField(default=True)
 
     # define Many-To-Many Fieds
-    category_devices=models.ManyToManyField('Category_Device',blank=True)
+    categories=models.ManyToManyField('Category',blank=True)
 
     def can_open_door_now(self):
         # Define groups and role
@@ -143,7 +147,7 @@ class Role(models.Model):
 class Device(models.Model):
     name=models.CharField(max_length=100)
     hourlyCost=models.FloatField(default=0.0)
-    category_device=models.ForeignKey('Category_Device')
+    category=models.ForeignKey('Category')
     mac=models.CharField(max_length=30)
 
     def __str__(self):
@@ -155,6 +159,7 @@ class Payment(models.Model):
     user=models.ForeignKey(User)
 
 class LogError(models.Model):
+    datetime = models.DateTimeField(default=timezone.now)
     description=models.CharField(max_length=200)
     code=models.CharField(default='',blank=True,max_length=200)
 
@@ -176,6 +181,11 @@ class LogDevice(models.Model):
     finishWork=models.DateTimeField()
     shutdownDevice=models.DateTimeField()
     inWorking=models.BooleanField(default=True)
+
+    def priceWork(self):
+        c = (finishWork-startWork)
+        duration = 0.01*decimal.Decimal((c.days*24+c.seconds/3600)*100)
+        return 'inWorking...' if self.inWorking else self.hourlyCost*duration
 
     def stop(self):
         n = timezone.now()

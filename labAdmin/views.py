@@ -110,3 +110,43 @@ class UseDevice(APIView):
         else:
             LogError(description="Api: Use Device - the user %d can't use the device %d" % (u.id, d.id))
             return Response("",status=status.HTTP_400_BAD_REQUEST)
+
+class tempUpdateUser(APIView):
+    def post(self, request, format=None):
+        u = request.data.get(name).title()
+        nfc = request.data.get(nfc)
+        t = request.data.get(type).title()
+
+        unk = Group.objects.get(name="Unknown")
+
+        user = User.objects.get(name=u, nfcId=nfc)
+        if t == 'Arduino':
+            user.groups.remove(unk)
+            user.groups.add(Group.objects.get(name="Arduino"))
+            user.needSubcription = False
+
+        elif t == 'Ordinario':
+            user.groups.remove(unk)
+            user.groups.add(Group.objects.get(name="Fablab"))
+            user.needSubcription = True
+
+        elif t == 'Host':
+            user.groups.remove(unk)
+            user.groups.add(Group.objects.get(name="Arduino"))
+            user.needSubcription = False
+
+        elif t == 'Full':
+            user.groups.remove(unk)
+            user.groups.add(Group.objects.get(name="Fablab"))
+            user.needSubcription = False
+
+        elif t == 'Direttivo':
+            user.groups.remove(unk)
+            user.groups.add(Group.objects.get(name="Arduino"))
+            user.needSubcription = False
+        
+        else:
+            return Response("FALSE")
+
+        user.save()
+        return Response("Updated")
