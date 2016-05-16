@@ -58,7 +58,7 @@ class User(models.Model):
         # Define groups and role
         try:
             n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group__user=self,role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+            return len(TimeSlot.objects.filter(role__group__user=self,role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
         except:
             # Any Exception Return False
             return False
@@ -66,7 +66,7 @@ class User(models.Model):
     def can_use_device_now(self, device):
         try:
             n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group__user=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+            return len(TimeSlot.objects.filter(role__group__user=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
         except:
             # Any Exception Return False
             return False
@@ -98,7 +98,7 @@ class Group(models.Model):
         # Define groups and role
         try:
             n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group=self,role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+            return len(TimeSlot.objects.filter(role__group=self,role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
         except:
             # Any Exception return False
             return False
@@ -106,7 +106,7 @@ class Group(models.Model):
     def can_use_device_now(self, device):
         try:
             n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+            return len(TimeSlot.objects.filter(role__group=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
         except:
             # Any Exception return False
             return False
@@ -134,7 +134,7 @@ class Role(models.Model):
         # Define groups and role
         try:
             n = timezone.now()
-            return len(TimeSlot.objects.filter(role=self, role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+            return len(TimeSlot.objects.filter(role=self, role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
         except:
             # Any Exception return False
             return False
@@ -142,7 +142,7 @@ class Role(models.Model):
     def can_use_device_now(self, device):
         try:
             n = timezone.now()
-            return len(TimeSlot.objects.filter(role=self, role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.weekday(),weekday_end__gte=n.weekday())) > 0
+            return len(TimeSlot.objects.filter(role=self, role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
         except:
             # Any Exception Return False
             return False
