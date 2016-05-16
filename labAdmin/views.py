@@ -127,24 +127,19 @@ class tempUpdateUser(APIView):
 
         elif t == 'Ordinario':
             user.groups.remove(unk)
-            user.groups.add(Group.objects.get(name="Fablab"))
+            user.groups.add(Group.objects.get(name="Fablab User"))
             user.needSubcription = True
 
-        elif t == 'Host':
+        elif t == 'Host' or t == 'Full':
             user.groups.remove(unk)
-            user.groups.add(Group.objects.get(name="Arduino"))
-            user.needSubcription = False
-
-        elif t == 'Full':
-            user.groups.remove(unk)
-            user.groups.add(Group.objects.get(name="Fablab"))
-            user.needSubcription = False
+            user.groups.add(Group.objects.get(name="Fablab Host"))
+            user.needSubcription = True
 
         elif t == 'Direttivo':
             user.groups.remove(unk)
-            user.groups.add(Group.objects.get(name="Arduino"))
-            user.needSubcription = False
-        
+            user.groups.add(Group.objects.get(name="Fablab Executive"))
+            user.needSubcription = True
+
         else:
             return Response("FALSE")
 

@@ -19,7 +19,7 @@ class RoleAdmin(admin.ModelAdmin):
 admin.site.register(Role, RoleAdmin)
 
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('name','roles',)
+    list_display = ('name',)
     ordering = ('name',)
 
 admin.site.register(Group, GroupAdmin)
