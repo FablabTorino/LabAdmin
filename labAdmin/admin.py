@@ -13,13 +13,13 @@ class UserAdmin(admin.ModelAdmin):
 admin.site.register(User, UserAdmin)
 
 class RoleAdmin(admin.ModelAdmin):
-    list_display = ('name', 'role_kind', 'time_slots','valid')
+    list_display = ('name', 'role_kind','valid')
     ordering = ('name',)
 
 admin.site.register(Role, RoleAdmin)
 
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'roles')
+    list_display = ('name')
     ordering = ('name',)
 
 admin.site.register(Group, GroupAdmin)
