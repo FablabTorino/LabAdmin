@@ -8,7 +8,7 @@ class UserAdmin(admin.ModelAdmin):
     ordering = ('name',) # The negative sign indicate descendent order
 
     def subscription(self, obj):
-        return subscriptionEnd if obj.needSubcription else "lifetime membership"
+        return obj.endSubcription if obj.needSubcription else "lifetime membership"
 
 
 
