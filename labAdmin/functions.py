@@ -1,6 +1,5 @@
 from labAdmin.models import *
 
-
 def get_user_by_nfc_or_None(nfc):
     """
     Function that return the User that has the nfc code passed as parameter else returns None

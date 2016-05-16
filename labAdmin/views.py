@@ -2,10 +2,10 @@ from django.http import HttpResponse, Http404
 
 from labAdmin.serializers import *
 from labAdmin.models import *
+from labAdmin import functions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from labAdmin import functions
 # Create your views here.
 
 class LoginByNFC(APIView):
@@ -21,7 +21,7 @@ class LoginByNFC(APIView):
         nfc = request.data.get('nfcId')
         u = get_user_by_nfc_or_None(nfc=nfc)
         if u is None:
-            LogError(description="Api: Login By NFC - NFC not Valid",nfc=nfc).save()
+            LogError(description="Api: Login By NFC - NFC not Valid",code=nfc).save()
             return Response("",status=status.HTTP_400_BAD_REQUEST)
         return Response(UserSerializer(u).data, status=status.HTTP_200_OK)
 
@@ -42,7 +42,7 @@ class OpenDoorByNFC(APIView):
         nfc = request.data.get('nfcId')
         u = get_user_by_nfc_or_None(nfc=nfc)
         if u is None:
-            LogError(description="Api: Open Door By NFC - NFC not Valid",nfc=nfc).save()
+            LogError(description="Api: Open Door By NFC - NFC not Valid",code=nfc).save()
             return Response("",status=status.HTTP_400_BAD_REQUEST)
         l=LogAccess(user=u,opened=u.can_open_door_now())
         l.save()
@@ -67,7 +67,7 @@ class GetDeviceByMac(APIView):
         d = get_device_by_mac_or_None(mac=mac)
 
         if d is None:
-            LogError(description="Api: Get Device By Mac - Mac not valid",nfc=mac)
+            LogError(description="Api: Get Device By Mac - Mac not valid",code=mac)
             return Response("",status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"id":d.id,"name":d.name},status=status.HTTP_200_OK)
@@ -89,7 +89,7 @@ class UseDevice(APIView):
         d = get_device_or_None(id=request.data.get('deviceId'))
 
         if d is None:
-            LogError(description="Api: Use Device - device ID not valid",nfc=request.data.get('deviceId'))
+            LogError(description="Api: Use Device - device ID not valid",code=request.data.get('deviceId'))
             return Response("",status=status.HTTP_400_BAD_REQUEST)
 
         if u.can_use_device_now(d):

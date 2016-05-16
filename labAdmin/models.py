@@ -155,7 +155,7 @@ class Payment(models.Model):
 
 class LogError(models.Model):
     description=models.CharField(max_length=200)
-    nfc=models.IntegerField(default='',blank=True)
+    code=models.CharField(default='',blank=True,max_length=200)
 
 # Relations
 class LogAccess(models.Model):
