@@ -114,37 +114,36 @@ class UseDevice(APIView):
 class tempUpdateUser(APIView):
     def post(self, request, format=None):
         users = request.data.get('users')
-        return Response(users[0]['name'])
-        return;
-        u = request.data.get(name).title()
-        nfc = request.data.get(nfc)
-        t = request.data.get(type).title()
 
         unk = Group.objects.get(name="Unknown")
+        ard = Group.objects.get(name="Arduino")
+        fh = Group.objects.get(name="Fablab Host")
+        fe = Group.objects.get(name="Fablab Executive")
+        fu = Group.objects.get(name="Fablab User")
 
-        user = User.objects.get(name=u, nfcId=nfc)
-        if t == 'Arduino':
-            user.groups.remove(unk)
-            user.groups.add(Group.objects.get(name="Arduino"))
-            user.needSubcription = False
 
-        elif t == 'Ordinario':
-            user.groups.remove(unk)
-            user.groups.add(Group.objects.get(name="Fablab User"))
-            user.needSubcription = True
+        for uu in users:
+            n = uu['name']
+            nfc = uu['nfc']
+            t = uu['type']
+            try:
+                u = User.objects.get(name=n, nfcId=nfc)
+                u.groups.remove(unk)
+                if t == 'Arduino':
+                    user.groups.add(ard)
+                    user.needSubcription = False
+                elif t == 'Ordinario':
+                    user.groups.add(fu)
+                    user.needSubcription = True
+                elif t == 'Host' or t == 'Full':
+                    user.groups.add(fh)
+                    user.needSubcription = True
+                elif t == 'Direttivo':
+                    user.groups.add(fe)
+                    user.needSubcription = True
 
-        elif t == 'Host' or t == 'Full':
-            user.groups.remove(unk)
-            user.groups.add(Group.objects.get(name="Fablab Host"))
-            user.needSubcription = True
+                user.save()
+            except:
+                1
 
-        elif t == 'Direttivo':
-            user.groups.remove(unk)
-            user.groups.add(Group.objects.get(name="Fablab Executive"))
-            user.needSubcription = True
-
-        else:
-            return Response("FALSE")
-
-        user.save()
         return Response("Updated")
