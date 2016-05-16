@@ -71,6 +71,12 @@ class User(models.Model):
             # Any Exception Return False
             return False
 
+    def displaygroups(self):
+        data = [];
+        for g in self.groups.all()
+            data.append(g.name)
+        return ",".join(data)
+
     def __str__(self):
         return self.name
 

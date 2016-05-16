@@ -4,17 +4,11 @@ from labAdmin.models import *
 # Register your models here.
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('name', 'nfcId','groupslist','firstSignup', 'lastSignup', 'subscription')
+    list_display = ('name', 'nfcId','displaygroups','firstSignup', 'lastSignup', 'subscription')
     ordering = ('name','-needSubcription','-endSubscription') # The negative sign indicate descendent order
 
     def subscription(self, obj):
         return obj.endSubcription if obj.needSubcription else "lifetime membership"
-
-    def groupslist(self, obj):
-        data = [];
-        for g in obj.groups.all()
-            data.append(g.name)
-        return ",".join(data)
 
 admin.site.register(User, UserAdmin)
 
