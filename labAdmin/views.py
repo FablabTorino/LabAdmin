@@ -125,7 +125,7 @@ class tempUpdateUser(APIView):
         for uu in users:
             n = uu['name']
             nfc = uu['nfc']
-            t = uu['type']
+            t = uu['type'].title()
             try:
                 u = User.objects.get(name=n, nfcId=nfc)
                 u.groups.remove(unk)
