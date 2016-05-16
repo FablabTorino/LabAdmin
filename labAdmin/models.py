@@ -41,8 +41,8 @@ class User(models.Model):
     name=models.CharField(max_length=200)
     firstSignup = models.DateField()
     lastSignup = models.DateField()
-    endSubcription = models.DateField()
-    needSubcription = models.BooleanField(default=True)
+    endSubscription = models.DateField()
+    needSubscription = models.BooleanField(default=True)
     nfcId=models.BigIntegerField(unique=True, null=True)
 
     # define Many-To-Many fields
@@ -72,8 +72,8 @@ class User(models.Model):
             return False
 
     def displaygroups(self):
-        data = [];
-        for g in self.groups.all()
+        data = []
+        for g in self.groups.all():
             data.append(g.name)
         return ",".join(data)
 

@@ -5,10 +5,10 @@ from labAdmin.models import *
 
 class UserAdmin(admin.ModelAdmin):
     list_display = ('name', 'nfcId','displaygroups','firstSignup', 'lastSignup', 'subscription')
-    ordering = ('name','-needSubcription','-endSubscription') # The negative sign indicate descendent order
+    ordering = ('name','-needSusbcription','-endSubscription') # The negative sign indicate descendent order
 
     def subscription(self, obj):
-        return obj.endSubcription if obj.needSubcription else "lifetime membership"
+        return obj.endSubscription if obj.needSubscription else "lifetime membership"
 
 admin.site.register(User, UserAdmin)
 
