@@ -19,8 +19,16 @@ class RoleAdmin(admin.ModelAdmin):
 admin.site.register(Role, RoleAdmin)
 
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('name',)
+    list_display = ('name','groupslist')
     ordering = ('name',)
+
+    def groupslist(self, obj):
+        data = [];
+        for g in obj.groups.all
+            data.append(g.name)
+
+        return ",".join(data)
+
 
 admin.site.register(Group, GroupAdmin)
 
