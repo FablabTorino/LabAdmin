@@ -86,9 +86,9 @@ WSGI_APPLICATION = 'testSite.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'labAdmin',
-        'USER': 'labAdmin',
-        'PASSWORD': 'labAdmin',
+        'NAME': 'labadmin',
+        'USER': 'root',
+        'PASSWORD': '3sticazzi!',
         'HOST': 'localhost',
         'PORT': '',
     }
