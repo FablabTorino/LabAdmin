@@ -1,8 +1,6 @@
 # LabAdmin
 Manage user rights to access the lab and the machines
 
-
-
 # how to setup locally
 
 ## install django
@@ -28,6 +26,10 @@ pip install mysql-python
 this will be needed to access the admin interface
 
 ` python manage.py createsuperuser `
+
+## sync the db and generate the required tables
+
+`python manage.py migrate --run-syncdb`
 
 ## Run the server
 
