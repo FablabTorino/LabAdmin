@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     # 'rest_framework.authtoken',
-    'labAdmin.apps.labAdminConfig',
+    'labAdmin',
 ]
 
 # REST_FRAMEWORK = {
@@ -85,12 +85,8 @@ WSGI_APPLICATION = 'testSite.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'labadmin',
-        'USER': 'root',
-        'PASSWORD': '3sticazzi!',
-        'HOST': 'localhost',
-        'PORT': '',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'testSite.db'),
     }
 }
 
