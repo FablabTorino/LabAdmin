@@ -46,8 +46,6 @@ class TestLabAdmin(TestCase):
         u = UserProfile.objects.create(
             user=user,
             name="Alessandro Monaco",
-            firstSignup=timezone.now(),
-            lastSignup=timezone.now(),
             needSubscription=False,
             endSubscription=timezone.now()
         )

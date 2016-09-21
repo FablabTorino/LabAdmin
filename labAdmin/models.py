@@ -44,8 +44,8 @@ class UserProfile(models.Model):
     picture = models.ImageField(upload_to="labadmin/users/pictures", null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
 
-    firstSignup = models.DateField()
-    lastSignup = models.DateField()
+    firstSignup = models.DateField(null=True)
+    lastSignup = models.DateField(null=True)
     endSubscription = models.DateField()
     needSubscription = models.BooleanField(default=True)
     nfcId=models.BigIntegerField(unique=True, null=True)
