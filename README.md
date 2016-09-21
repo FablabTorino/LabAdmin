@@ -1,40 +1,31 @@
 # LabAdmin
+
 Manage user rights to access the lab and the machines
 
-# how to setup locally
+## Quickstart
 
-## install django
-
-`pip install Django==1.9.8`
-
-## install mysql
-- create a db called labadmin
-- configure the settings.py adding your db username and psw
-
-## install the dependencies
+Install the labAdmin:
 
 ```
-pip install djangorestframework
-pip install mysql-python
+python setup.py install
 ```
 
-## apply modification in the model to the db
+Add it to the installed apps:
 
-`python manage.py migrate `
+```
+INSTALLED_APPS = [
+    # ...
+    'labAdmin',
+]
+```
 
-##create a superuser account
-this will be needed to access the admin interface
+Add labAdmin urls to your project urls:
 
-` python manage.py createsuperuser `
+```
+urlpatterns = [
+    # ...
+    include(r'^labAdmin/', include('labAdmin.urls')),
+]
+```
 
-## sync the db and generate the required tables
-
-`python manage.py migrate --run-syncdb`
-
-## Run the server
-
-`python manage.py runserver`
-
-## admin view
-you can access the admin view at
-[127.0.0.1:8000/admin](127.0.0.1:8000/admin) and use the credential you created via superuser to login
+Profit!
