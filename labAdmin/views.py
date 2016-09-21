@@ -25,7 +25,7 @@ class LoginByNFC(APIView):
         if u is None:
             LogError(description="Api: Login By NFC - NFC not Valid",code=nfc).save()
             return Response("",status=status.HTTP_400_BAD_REQUEST)
-        return Response(UserSerializer(u).data, status=status.HTTP_200_OK)
+        return Response(UserProfileSerializer(u).data, status=status.HTTP_200_OK)
 
 class OpenDoorByNFC(APIView):
     """
@@ -130,7 +130,7 @@ class tempUpdateUser(APIView):
             nfc = uu['nfc']
             t = uu['type'].title()
 
-            u = User.objects.get(name=n, nfcId=nfc)
+            u = UserProfile.objects.get(name=n, nfcId=nfc)
             u.groups.remove(unk)
             if t == 'Arduino':
                 u.groups.add(ard)

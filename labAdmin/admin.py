@@ -3,14 +3,14 @@ from labAdmin.models import *
 
 # Register your models here.
 
-class UserAdmin(admin.ModelAdmin):
+class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('name', 'nfcId','displaygroups','firstSignup', 'lastSignup', 'subscription')
     ordering = ('name','-needSubscription','-endSubscription') # The negative sign indicate descendent order
 
     def subscription(self, obj):
         return obj.endSubscription if obj.needSubscription else "lifetime membership"
 
-admin.site.register(User, UserAdmin)
+admin.site.register(UserProfile, UserProfileAdmin)
 
 class RoleAdmin(admin.ModelAdmin):
     list_display = ('name', 'role_kind','valid',)

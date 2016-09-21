@@ -1,9 +1,10 @@
 from django.test import TestCase
+from django.contrib.auth.models import User
 from labAdmin.models import *
 from django.utils import timezone, dateparse
 # Create your tests here.
 
-User.objects.all().delete()
+UserProfile.objects.all().delete()
 Group.objects.all().delete()
 Role.objects.all().delete()
 
@@ -24,7 +25,8 @@ g2.save()
 g2.roles.add(r2)
 g3 = Group(name="Arduino")
 
-u = User(name="Alessandro Monaco",firstSignup=timezone.now(),lastSignup=timezone.now(),needSubcription=False,endSubcription=timezone.now())
+user = User.objects.create(username="alessandro.monaco")
+u = UserProfile(user=user, name="Alessandro Monaco",firstSignup=timezone.now(),lastSignup=timezone.now(),needSubcription=False,endSubcription=timezone.now())
 u.save()
 u.groups.add(g2)
 u.listRoles()

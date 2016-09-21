@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from django.utils import timezone
 import decimal
 
@@ -30,14 +31,11 @@ class TimeSlot(models.Model):
     def __str__(self):
         return "%s: %s - %s, %s - %s"%(self.name, self.WEEKDAY_CHOICES[self.weekday_start-1][1],self.WEEKDAY_CHOICES[self.weekday_end-1][1],self.hour_start,self.hour_end)
 
-class User(models.Model):
+class UserProfile(models.Model):
     """
-    Users have the following feature:
-    Name
-    FirstSignup
-    LastSignup
-    EndSubcription
+    The User Profile
     """
+    user=models.OneToOneField(User)
     name=models.CharField(max_length=200)
     firstSignup = models.DateField()
     lastSignup = models.DateField()
@@ -162,7 +160,7 @@ class Device(models.Model):
 class Payment(models.Model):
     date = models.DateField(default=timezone.now().today)
     value=models.FloatField(default=0.0)
-    user=models.ForeignKey(User)
+    user=models.ForeignKey(UserProfile)
 
 class LogError(models.Model):
     datetime = models.DateTimeField(default=timezone.now)
@@ -172,7 +170,7 @@ class LogError(models.Model):
 # Relations
 class LogAccess(models.Model):
     datetime=models.DateTimeField(default=timezone.now)
-    user=models.ForeignKey('User')
+    user=models.ForeignKey('UserProfile')
     opened=models.BooleanField(default=False)
 
     def __str__(self):
@@ -180,7 +178,7 @@ class LogAccess(models.Model):
 
 class LogDevice(models.Model):
     hourlyCost=models.FloatField(default=0.0)
-    user=models.ForeignKey('User')
+    user=models.ForeignKey('UserProfile')
     device=models.ForeignKey('Device')
     bootDevice=models.DateTimeField()
     startWork=models.DateTimeField()
