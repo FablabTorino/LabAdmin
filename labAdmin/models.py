@@ -36,7 +36,14 @@ class UserProfile(models.Model):
     The User Profile
     """
     user=models.OneToOneField(User)
+
     name=models.CharField(max_length=200)
+    address = models.CharField(max_length=200, null=True, blank=True)
+    tax_code = models.CharField(max_length=50, null=True, blank=True)
+    vat_id = models.CharField(max_length=50, null=True, blank=True)
+    picture = models.ImageField(upload_to="labadmin/users/pictures", null=True, blank=True)
+    bio = models.TextField(null=True, blank=True)
+
     firstSignup = models.DateField()
     lastSignup = models.DateField()
     endSubscription = models.DateField()
