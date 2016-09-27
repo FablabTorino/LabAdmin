@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.files import File
 from django.utils import timezone
 
-from labAdmin.models import UserProfile
+from labAdmin.models import UserProfile, Card
 
 
 def import_fablabto_users(users_json):
@@ -39,9 +39,12 @@ def import_fablabto_users(users_json):
             )
 
             try:
-                up.nfcId = int(fabuser['rfid'], 16)
+                nfc_id = int(fabuser['rfid'], 16)
+                card, _ = Card.objects.get_or_create(nfc_id=nfc_id)
+                if card:
+                    up.card = card
             except:
-                print(up.name, up.nfcId, fabuser['rfid'])
+                print('Failed to convert rfid:', up.name, fabuser['rfid'])
 
             if 'immagine' in fabuser:
                 with open(fabuser['immagine'], 'rb') as img:
