@@ -16,7 +16,7 @@ setup(
     description="""A django app to manage your Fablab""",
     author='Fablab Torino',
     author_email='info@fablabtorino.org',
-    url='https://github.com//FablabTorino/LabAdmin',
+    url='https://github.com/FablabTorino/LabAdmin',
     packages=[
         'labAdmin',
     ],
