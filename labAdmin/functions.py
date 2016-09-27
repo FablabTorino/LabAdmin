@@ -1,14 +1,7 @@
-from labAdmin.models import *
+from labAdmin.models import (
+    Device, UserProfile
+)
 
-def get_user_by_nfc_or_None(nfc):
-    """
-    Function that return the UserProfile that has the nfc code passed as parameter else returns None
-    """
-    try:
-        u = UserProfile.objects.get(nfcId=nfc)
-        return u
-    except UserProfile.DoesNotExist:
-        return None
 
 def get_user_or_None(id):
     """

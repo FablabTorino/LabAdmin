@@ -1,9 +1,12 @@
+import json
+
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, Client
+from django.urls import reverse
 from django.utils import timezone, dateparse
 
 from .models import (
-    Group, Role, TimeSlot, UserProfile
+    Card, Group, LogAccess, Role, TimeSlot, UserProfile
 )
 
 
@@ -42,11 +45,73 @@ class TestLabAdmin(TestCase):
         guest_group = Group.objects.create(name="Guest")
         guest_group.roles.add(guest_role)
 
+        card = Card.objects.create(nfc_id=123456)
         user = User.objects.create(username="alessandro.monaco")
         u = UserProfile.objects.create(
             user=user,
+            card=card,
             name="Alessandro Monaco",
             needSubscription=False,
             endSubscription=timezone.now()
         )
         u.groups.add(guest_group)
+
+        cls.card = card
+        cls.userprofile = u
+
+    def test_login_by_nfc(self):
+        client = Client()
+        url = reverse('nfc-users')
+        data = {
+            'nfc_id': self.card.nfc_id
+        }
+        response = client.post(url, data, format='json')
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(str(response.content, encoding='utf8'))
+        self.assertEqual(len(response_data), 1)
+        user_profile = response_data[0]
+        self.assertEqual(user_profile['id'], self.userprofile.pk)
+        self.assertEqual(user_profile['name'], self.userprofile.name)
+
+        data = {
+            'nfc_id': 0
+        }
+        response = client.post(url, data, format='json')
+        self.assertEqual(response.status_code, 400)
+
+        response = client.get(url)
+        self.assertEqual(response.status_code, 405)
+
+    def test_open_door_by_nfc(self):
+
+        self.assertFalse(LogAccess.objects.all().exists())
+
+        client = Client()
+        url = reverse('open-door-nfc')
+        data = {
+            'nfc_id': self.card.nfc_id
+        }
+        response = client.post(url, data, format='json')
+        self.assertEqual(response.status_code, 201)
+        response_data = json.loads(str(response.content, encoding='utf8'))
+        self.assertIn('users', response_data)
+        self.assertEqual(len(response_data['users']), 1)
+        user_profile = response_data['users'][0]
+        self.assertEqual(user_profile['id'], self.userprofile.pk)
+        self.assertEqual(user_profile['name'], self.userprofile.name)
+        self.assertEqual(response_data['type'], 'other')
+        self.assertIn('datetime', response_data)
+        self.assertEqual(response_data['open'], self.userprofile.can_open_door_now())
+
+        users = UserProfile.objects.all()
+        logaccess = LogAccess.objects.filter(users=users, card=self.card)
+        self.assertTrue(logaccess.exists())
+
+        data = {
+            'nfc_id': 0
+        }
+        response = client.post(url, data, format='json')
+        self.assertEqual(response.status_code, 400)
+
+        response = client.get(url)
+        self.assertEqual(response.status_code, 405)

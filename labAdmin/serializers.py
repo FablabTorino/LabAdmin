@@ -9,12 +9,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ('id','name')
 
-class LogAccessSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = LogAccess
-        fields = ('user','datetime','opened')
-
 
 # class LogdoorSerializer(serializers.ModelSerializer):
 #

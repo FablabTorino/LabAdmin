@@ -4,7 +4,7 @@ from labAdmin.models import *
 # Register your models here.
 
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('name', 'nfcId','displaygroups','firstSignup', 'lastSignup', 'subscription')
+    list_display = ('name', 'card', 'displaygroups','firstSignup', 'lastSignup', 'subscription')
     ordering = ('name','-needSubscription','-endSubscription') # The negative sign indicate descendent order
 
     def subscription(self, obj):
@@ -47,8 +47,8 @@ admin.site.register(Payment, PaymentAdmin)
 
 
 class LogAccessAdmin(admin.ModelAdmin):
-    list_display = ('datetime', 'user', 'opened',)
-    ordering = ('-datetime','user',)
+    list_display = ('datetime', 'card', 'opened',)
+    ordering = ('-datetime', 'card',)
 
 admin.site.register(LogAccess,LogAccessAdmin)
 

@@ -31,6 +31,13 @@ class TimeSlot(models.Model):
     def __str__(self):
         return "%s: %s - %s, %s - %s"%(self.name, self.WEEKDAY_CHOICES[self.weekday_start-1][1],self.WEEKDAY_CHOICES[self.weekday_end-1][1],self.hour_start,self.hour_end)
 
+class Card(models.Model):
+    """A card with a radio device"""
+    nfc_id = models.BigIntegerField(unique=True)
+
+    def __str__(self):
+        return "{}".format(self.nfc_id)
+
 class UserProfile(models.Model):
     """
     The User Profile
@@ -48,7 +55,8 @@ class UserProfile(models.Model):
     lastSignup = models.DateField(null=True)
     endSubscription = models.DateField()
     needSubscription = models.BooleanField(default=True)
-    nfcId=models.BigIntegerField(unique=True, null=True)
+
+    card = models.ForeignKey(Card, null=True, blank=True)
 
     # define Many-To-Many fields
     groups=models.ManyToManyField('Group')
@@ -174,14 +182,22 @@ class LogError(models.Model):
     description=models.CharField(max_length=200)
     code=models.CharField(default='',blank=True,max_length=200)
 
-# Relations
+class LogAccessManager(models.Manager):
+    def log(self, card, users, opened):
+        l = LogAccess.objects.create(card=card, opened=opened)
+        l.users.add(*users)
+        return l
+
 class LogAccess(models.Model):
-    datetime=models.DateTimeField(default=timezone.now)
-    user=models.ForeignKey('UserProfile')
-    opened=models.BooleanField(default=False)
+    datetime = models.DateTimeField(default=timezone.now)
+    card = models.ForeignKey(Card)
+    users = models.ManyToManyField(UserProfile)
+    opened = models.BooleanField(default=False)
+
+    objects= LogAccessManager()
 
     def __str__(self):
-        return "%s Enter in Fablab it %s: Enter %sPermitted" %(self.user, self.datetime, "Not " if not self.opened else "")
+        return "%s Enter in Fablab it %s: Enter %sPermitted" % (self.card, self.datetime, "Not " if not self.opened else "")
 
 class LogDevice(models.Model):
     hourlyCost=models.FloatField(default=0.0)
