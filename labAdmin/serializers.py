@@ -3,10 +3,10 @@ from labAdmin.models import *
 from rest_framework import serializers
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = User
+        model = UserProfile
         fields = ('id','name')
 
 class LogAccessSerializer(serializers.ModelSerializer):
@@ -26,19 +26,19 @@ class LogAccessSerializer(serializers.ModelSerializer):
 #
 #     def get_object(self):
 #         try:
-#             u = User.objects.get(nfcId=self.nfcId)
+#             u = UserProfile.objects.get(nfcId=self.nfcId)
 #             return u
-#         except User.DoesNotExist:
+#         except UserProfile.DoesNotExist:
 #             return None
 #
 #     class Meta:
-#         model = User
+#         model = UserProfile
 #         fields = ('id','nfcId')
 #
-# class UserSerializer(serializers.ModelSerializer):
+# class UserProfileSerializer(serializers.ModelSerializer):
 #
 #     class Meta:
-#         model = User
+#         model = UserProfile
 #         fields = ('id', 'username','utype', 'signup', 'subscriptionEnd', 'needSubcription', 'nfcId')
 
 # class PermissionSerializer(serializers.ModelSerializer):

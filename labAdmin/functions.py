@@ -2,22 +2,22 @@ from labAdmin.models import *
 
 def get_user_by_nfc_or_None(nfc):
     """
-    Function that return the User that has the nfc code passed as parameter else returns None
+    Function that return the UserProfile that has the nfc code passed as parameter else returns None
     """
     try:
-        u = User.objects.get(nfcId=nfc)
+        u = UserProfile.objects.get(nfcId=nfc)
         return u
-    except User.DoesNotExist:
+    except UserProfile.DoesNotExist:
         return None
 
 def get_user_or_None(id):
     """
-    Function that return the User that has the id passed as parameter else returns None
+    Function that return the UserProfile that has the id passed as parameter else returns None
     """
     try:
-        u = User.objects.get(id=id)
+        u = UserProfile.objects.get(id=id)
         return u
-    except User.DoesNotExist:
+    except UserProfile.DoesNotExist:
         return None
 
 def get_device_by_mac_or_None(mac):
