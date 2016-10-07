@@ -1,4 +1,5 @@
 from django.http import HttpResponse, Http404
+from django.shortcuts import get_object_or_404
 
 from labAdmin.serializers import *
 from labAdmin.models import *
@@ -6,6 +7,8 @@ from labAdmin import functions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
+from oauth2_provider.models import AccessToken
 
 from labAdmin import functions
 # Create your views here.
@@ -151,3 +154,40 @@ class tempUpdateUser(APIView):
 
 
         return Response("Updated except %d, %d" % (e,ee))
+
+class UserIdentity(APIView):
+    def get(self, request, format=None):
+        token_string = request.GET.get('access_token')
+        now = timezone.now()
+        token = get_object_or_404(AccessToken, token=token_string, expires__gt=now, user__isnull=False)
+        user = token.user
+        if not user.is_active:
+            raise Http404
+
+        try:
+            up = user.userprofile
+        except UserProfile.DoesNotExist:
+            up = None
+
+        content = {
+            'id': user.pk,
+            'username': user.username,
+            'email': user.email,
+            'is_staff': user.is_staff,
+        }
+
+        if up:
+            meta = request.META
+            if meta['SERVER_PORT'] and meta['SERVER_PORT'] not in ('443', '80'):
+                port = ':{}'.format(meta['SERVER_PORT'])
+            else:
+                port = ''
+            base_url = '{}://{}{}'.format(request.scheme, meta['SERVER_NAME'], port)
+            groups = up.groups.values_list('name', flat=True)
+            content.update({
+                'name': up.name,
+                'avatar_url': '{}{}'.format(base_url, up.picture.url) if up.picture else '',
+                'bio': up.bio or '',
+                'groups': groups,
+            })
+        return Response(content)

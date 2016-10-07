@@ -23,7 +23,8 @@ setup(
     include_package_data=True,
     install_requires=[
        'django<1.11,>=1.8',
-       'djangorestframework>3,<4'
+       'djangorestframework>3,<4',
+       'django-oauth-toolkit=0.10.0'
     ],
     zip_safe=False,
     keywords='Fablab, lab, admin',
