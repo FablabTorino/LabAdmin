@@ -1,7 +1,11 @@
 from django.contrib import admin
 from labAdmin.models import *
 
-# Register your models here.
+
+class CardAdmin(admin.ModelAdmin):
+    list_display = ('nfc_id', 'credits')
+
+admin.site.register(Card, CardAdmin)
 
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('name', 'card', 'displaygroups','firstSignup', 'lastSignup', 'subscription')

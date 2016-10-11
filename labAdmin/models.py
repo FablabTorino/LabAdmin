@@ -48,6 +48,7 @@ class TimeSlot(models.Model):
 class Card(models.Model):
     """A card with a radio device"""
     nfc_id = models.BigIntegerField(unique=True)
+    credits = models.IntegerField(default=0)
 
     def __str__(self):
         return "{}".format(self.nfc_id)
