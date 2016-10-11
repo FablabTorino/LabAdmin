@@ -45,6 +45,7 @@ class TimeSlot(models.Model):
     def __str__(self):
         return "%s: %s - %s, %s - %s"%(self.name, self.WEEKDAY_CHOICES[self.weekday_start-1][1],self.WEEKDAY_CHOICES[self.weekday_end-1][1],self.hour_start,self.hour_end)
 
+
 class Card(models.Model):
     """A card with a radio device"""
     nfc_id = models.BigIntegerField(unique=True)
@@ -52,6 +53,15 @@ class Card(models.Model):
 
     def __str__(self):
         return "{}".format(self.nfc_id)
+
+    def log_credits_update(self, amount, user=None, from_admin=False):
+        LogCredits.objects.create(
+            card=self,
+            amount=amount,
+            user=user,
+            from_admin=from_admin
+        )
+
 
 class UserProfile(models.Model):
     """
@@ -229,3 +239,26 @@ class LogDevice(models.Model):
 
     def __str__(self):
         return "user: %s\ndevice: %s\nboot: %s\nstart: %s\ninWorking: %s\nHourlyCost: %f" %(self.user, self.device, self.bootDevice, self.startWork, "yes" if self.inWorking else "no\nshutdown: %s\nfinish: %s"%(self.shutdownDevice, self.finishWork), self.hourlyCost)
+
+
+class LogCredits(models.Model):
+    datetime = models.DateTimeField(default=timezone.now)
+    card = models.ForeignKey(Card)
+    amount = models.IntegerField()
+    user = models.ForeignKey(User, null=True, blank=True)
+    from_admin = models.BooleanField(default=False)
+
+    def __str__(self):
+        if from_admin:
+            return '{} {} set credits for card {} to {} from admin'.format(
+                self.datetime,
+                self.user,
+                self.card,
+                self.amount
+            )
+        return '{} {} updated credits for card {} by {}'.format(
+            self.datetime,
+            self.user if user else '<AnonymousUser>',
+            self.card,
+            self.amount
+        )

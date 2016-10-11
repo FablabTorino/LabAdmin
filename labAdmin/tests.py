@@ -7,7 +7,8 @@ from django.urls import reverse
 from django.utils import timezone, dateparse
 
 from .models import (
-    Card, Group, LogAccess, Role, TimeSlot, UserProfile, TimeSlot
+    Card, Group, LogAccess, Role, TimeSlot, UserProfile, TimeSlot,
+    LogCredits
 )
 
 
@@ -154,3 +155,88 @@ class TestLabAdmin(TestCase):
         self.assertTrue(ts_now.exists())
         self.assertEqual(ts_now.count(), 1)
         self.assertEqual(ts_now.first().pk, open_ts.pk)
+
+    def test_get_card_credits(self):
+        client = Client()
+        url = reverse('card-credits')
+        card = Card.objects.create(
+            nfc_id=1,
+            credits=1
+        )
+        data = {
+            'nfc_id': card.nfc_id
+        }
+        response = client.get(url, data)
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(str(response.content, encoding='utf8'))
+        self.assertEqual(response_data, {
+            'nfc_id': card.nfc_id,
+            'credits': 1
+        })
+
+        data = {
+            'nfc_id': 0
+        }
+        response = client.get(url, data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_update_card_credits(self):
+        client = Client()
+        url = reverse('card-credits')
+        card = Card.objects.create(
+            nfc_id=1,
+        )
+
+        self.assertEqual(LogCredits.objects.count(), 0)
+
+        # not enough credits
+        data = {
+            'nfc_id': card.nfc_id,
+            'amount': -10
+        }
+        response = client.post(url, data)
+        self.assertEqual(response.status_code, 403)
+
+        # add then consume credits
+        data = {
+            'nfc_id': card.nfc_id,
+            'amount': 10
+        }
+        response = client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+
+        response_data = json.loads(str(response.content, encoding='utf8'))
+        self.assertEqual(response_data, {
+            'nfc_id': card.nfc_id,
+            'credits': 10
+        })
+
+        self.assertEqual(LogCredits.objects.count(), 1)
+
+        data = {
+            'nfc_id': card.nfc_id,
+            'amount': -10
+        }
+        response = client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+
+        response_data = json.loads(str(response.content, encoding='utf8'))
+        self.assertEqual(response_data, {
+            'nfc_id': 1,
+            'credits': 0
+        })
+
+        self.assertEqual(LogCredits.objects.count(), 2)
+
+        data = {
+            'nfc_id': 0
+        }
+        response = client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+
+        data = {
+            'nfc_id': 1,
+            'amount': 'amount'
+        }
+        response = client.post(url, data)
+        self.assertEqual(response.status_code, 400)

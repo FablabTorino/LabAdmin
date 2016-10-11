@@ -1,5 +1,6 @@
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
+from django.db import transaction, IntegrityError
 
 from labAdmin.serializers import *
 from labAdmin.models import *
@@ -206,3 +207,71 @@ class UserIdentity(APIView):
                 'groups': groups,
             })
         return Response(content)
+
+class CardCredits(APIView):
+    """
+    API for getting card credits
+    In order to use this API send a GET with:
+    - 'nfc_id', to identifiy the card
+
+    The return value is a json array with the nfc_id and the credits amount for the card.
+
+    If the nfc code isn't valid a 'LogError' instance is saved and returns 400 status code
+    """
+
+    def get(self, request, format=None):
+        nfc = request.query_params.get('nfc_id')
+        try:
+            card = Card.objects.get(nfc_id=nfc)
+        except Card.DoesNotExist:
+            LogError(description="Api: Update Card Credits - NFC not Valid", code=nfc or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+        return Response(CardSerializer(card).data, status=status.HTTP_200_OK)
+
+    """
+    API for updating card credits
+    In order to use this API send a POST with:
+    - 'nfc_id', to identifiy the card
+    - 'amount', integer to add to credit amount
+
+    The return value is a json array with the nfc_id and new credits amount for the card.
+
+    The amount could be negative and if there's not enough credits it'll returns 403 status code
+    If the nfc code isn't valid a 'LogError' instance is saved and returns 400 status code
+    """
+    def post(self, request, format=None):
+        serializer = CardUpdateSerializer(data=request.data)
+        nfc = serializer.initial_data.get('nfc_id')
+        if not serializer.is_valid():
+            LogError(description="Api: Update Card Credits - Invalid data", code=nfc or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # avoid race conditions updating the card model
+            with transaction.atomic():
+                try:
+                    card = Card.objects.get(nfc_id=nfc)
+                except Card.DoesNotExist:
+                    LogError(description="Api: Update Card Credits - NFC not Valid", code=nfc).save()
+                    return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+                amount = serializer.data['amount']
+                new_amount = card.credits + amount
+                if new_amount < 0:
+                    msg = "Api: Update Card Credits - Not enough credits: requested {} of {} available".format(
+                        amount, card.credits
+                    )
+                    LogError(description=msg, code=nfc).save()
+                    return Response("", status=status.HTTP_403_FORBIDDEN)
+
+                # update the card with the new credits amount
+                card.credits = new_amount
+                card.save(update_fields=['credits'])
+                user = request.user if request.user.is_authenticated() else None
+                card.log_credits_update(amount=amount, user=user)
+
+        except IntegrityError:
+            LogError(description="Api: Update Card Credits - IntegrityError", code=nfc).save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(CardSerializer(card).data, status=status.HTTP_200_OK)
