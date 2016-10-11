@@ -11,49 +11,64 @@ from rest_framework import status
 from oauth2_provider.models import AccessToken
 
 from labAdmin import functions
-# Create your views here.
+
 
 class LoginByNFC(APIView):
     """
     API For Login (return user informations)
-    In order to use this API send a POST with a value named 'nfcId'
-    The return value is a json array with user informations
+    In order to use this API send a POST with a value named 'nfc_id'
+    The return value is a json array with users associated to the card
 
     If the nfc code isn't correct or valid, the API save in 'LogError' a new error that contains the error then return an error message to client (HTTP_400_BAD_REQUEST)
     """
 
     def post(self, request, format=None):
-        nfc = request.data.get('nfcId')
-        u = functions.get_user_by_nfc_or_None(nfc=nfc)
-        if u is None:
-            LogError(description="Api: Login By NFC - NFC not Valid",code=nfc).save()
-            return Response("",status=status.HTTP_400_BAD_REQUEST)
-        return Response(UserProfileSerializer(u).data, status=status.HTTP_200_OK)
+        nfc = request.data.get('nfc_id')
+        users = UserProfile.objects.filter(card__nfc_id=nfc)
+        if not users.exists():
+            LogError(description="Api: Login By NFC - NFC not Valid", code=nfc).save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+        return Response(UserProfileSerializer(users, many=True).data, status=status.HTTP_200_OK)
 
 class OpenDoorByNFC(APIView):
     """
     API For Opening the Door with Nfc (return log information)
-    In order to use this API send a POST with a value named 'nfcId'
+    In order to use this API send a POST with a value named 'nfc_id'
     The return value is a json array with:
-        'id': id of user
-        'name': name of user
-        'utype': type of user ('fablab' or 'other')
+        'users': an object with 'id' and 'name' of users
+        'utype': 'fablab' if there's a user in the 'Fablab'group or 'other'
         'datetime': datetime objects of the current time
         'open': return if the user can open the door or not
 
     If the nfc code isn't correct or valid, the API save in 'LogError' a new error that contains the error then return an alert message to client (HTTP_400_BAD_REQUEST)
     """
-    def post(self,request,format=None):
-        nfc = request.data.get('nfcId')
-        u = functions.get_user_by_nfc_or_None(nfc=nfc)
-        if u is None:
-            LogError(description="Api: Open Door By NFC - NFC not Valid",code=nfc).save()
-            return Response("",status=status.HTTP_400_BAD_REQUEST)
-        l=LogAccess(user=u,opened=u.can_open_door_now())
-        l.save()
-        utype="fablab" if len(Group.objects.filter(user=u,name__icontains='Fablab')) > 0 else "other"
+    def post(self, request, format=None):
+        nfc = request.data.get('nfc_id')
+        users = UserProfile.objects.filter(card__nfc_id=nfc)
+        if not users.exists():
+            LogError(description="Api: Open Door By NFC - NFC not Valid", code=nfc).save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"name":u.name,"type":utype,"datetime":l.datetime,"open":l.opened},status=status.HTTP_201_CREATED)
+        can_open = False
+        for u in users:
+           if u.can_open_door_now():
+               can_open = True
+               break
+        card = users.first().card
+        log_access = LogAccess.objects.log(users=users, card=card, opened=can_open)
+        users_pks = users.values_list('pk', flat=True)
+        if Group.objects.filter(userprofile__in=users_pks, name__icontains='Fablab').exists():
+            utype = "fablab"
+        else:
+            utype = "other"
+
+        data = {
+            "users": UserProfileSerializer(users, many=True).data,
+            "type": utype,
+            "datetime": log_access.datetime,
+            "open": log_access.opened
+        }
+        return Response(data, status=status.HTTP_201_CREATED)
 
 class GetDeviceByMac(APIView):
     """
