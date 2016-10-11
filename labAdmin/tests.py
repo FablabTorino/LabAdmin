@@ -1,3 +1,4 @@
+import datetime
 import json
 
 from django.contrib.auth.models import User
@@ -6,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone, dateparse
 
 from .models import (
-    Card, Group, LogAccess, Role, TimeSlot, UserProfile
+    Card, Group, LogAccess, Role, TimeSlot, UserProfile, TimeSlot
 )
 
 
@@ -115,3 +116,41 @@ class TestLabAdmin(TestCase):
 
         response = client.get(url)
         self.assertEqual(response.status_code, 405)
+
+    def test_timeslot_manager_now(self):
+        now = timezone.now()
+        now_time = now.time()
+        now_weekday = now.isoweekday()
+
+        # enough for the tests to work :)
+        end = now + datetime.timedelta(minutes=1)
+        end_time = end.time()
+        end_weekday = now.isoweekday()
+
+        self.assertFalse(TimeSlot.objects.can_now().exists())
+
+        open_ts = TimeSlot.objects.create(
+            hour_start=now_time,
+            hour_end=end_time,
+            weekday_start=now_weekday,
+            weekday_end=end_weekday
+        )
+
+        closed_ts_weekday = TimeSlot.objects.create(
+            hour_start=now_time,
+            hour_end=end_time,
+            weekday_start=end_weekday+1,
+            weekday_end=end_weekday+1
+        )
+
+        closed_ts_hour = TimeSlot.objects.create(
+            hour_start=now_time,
+            hour_end=now_time,
+            weekday_start=now_weekday,
+            weekday_end=end_weekday
+        )
+
+        ts_now = TimeSlot.objects.can_now()
+        self.assertTrue(ts_now.exists())
+        self.assertEqual(ts_now.count(), 1)
+        self.assertEqual(ts_now.first().pk, open_ts.pk)

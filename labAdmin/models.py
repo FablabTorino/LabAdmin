@@ -3,7 +3,19 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 import decimal
 
-# Create your models here.
+
+class TimeSlotManager(models.Manager):
+    def can_now(self):
+        """Filters the queryset for this moment"""
+        n = timezone.now()
+        qs = self.get_queryset()
+        return qs.filter(
+            hour_start__lte=n.time(),
+            hour_end__gte=n.time(),
+            weekday_start__lte=n.isoweekday(),
+            weekday_end__gte=n.isoweekday()
+        )
+
 
 class TimeSlot(models.Model):
     """
@@ -23,6 +35,8 @@ class TimeSlot(models.Model):
     weekday_end=models.SmallIntegerField(default=0, choices=WEEKDAY_CHOICES)
     hour_start=models.TimeField()
     hour_end=models.TimeField()
+
+    objects = TimeSlotManager()
 
     def have_permission_now(self):
         n = timezone.now()
@@ -70,16 +84,14 @@ class UserProfile(models.Model):
     def can_open_door_now(self):
         # Define groups and role
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group__user=self,role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role__group__user=self,role__role_kind=0,role__valid=True).exists()
         except:
             # Any Exception Return False
             return False
 
     def can_use_device_now(self, device):
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group__user=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role__group__user=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
         except:
             # Any Exception Return False
             return False
@@ -110,16 +122,14 @@ class Group(models.Model):
     def can_open_door_now(self):
         # Define groups and role
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group=self,role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role__group=self,role__role_kind=0,role__valid=True).exists()
         except:
             # Any Exception return False
             return False
 
     def can_use_device_now(self, device):
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role__group=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
         except:
             # Any Exception return False
             return False
@@ -146,16 +156,14 @@ class Role(models.Model):
     def can_open_door_now(self):
         # Define groups and role
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role=self, role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role=self, role__role_kind=0,role__valid=True).exists()
         except:
             # Any Exception return False
             return False
 
     def can_use_device_now(self, device):
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role=self, role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role=self, role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
         except:
             # Any Exception Return False
             return False
