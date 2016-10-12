@@ -81,7 +81,7 @@ class UserProfile(models.Model):
     endSubscription = models.DateField()
     needSubscription = models.BooleanField(default=True)
 
-    card = models.ForeignKey(Card, null=True, blank=True)
+    card = models.OneToOneField(Card, null=True, blank=True)
 
     # define Many-To-Many fields
     groups=models.ManyToManyField('Group')
