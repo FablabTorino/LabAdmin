@@ -87,10 +87,10 @@ class UserProfile(models.Model):
     groups=models.ManyToManyField('Group')
 
     def subscription_end(self):
-        return self.endSubscription if self.needSubcription else "Subcription not needed"
+        return self.endSubscription if self.needSubscription else "Subscription not needed"
 
     def subscriptionExpired(self):
-        return self.needSubcription and self.endSubscription < timezone.now()
+        return self.needSubscription and self.endSubscription < timezone.now()
 
     def can_open_door_now(self):
         # Define groups and role
