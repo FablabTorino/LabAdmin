@@ -185,6 +185,7 @@ class TestLabAdmin(TestCase):
         url = reverse('card-credits')
         card = Card.objects.create(
             nfc_id=1,
+            credits=10
         )
 
         self.assertEqual(LogCredits.objects.count(), 0)
@@ -192,27 +193,20 @@ class TestLabAdmin(TestCase):
         # not enough credits
         data = {
             'nfc_id': card.nfc_id,
-            'amount': -10
+            'amount': -20
         }
         response = client.post(url, data)
         self.assertEqual(response.status_code, 403)
 
-        # add then consume credits
+        # can't add credits
         data = {
             'nfc_id': card.nfc_id,
             'amount': 10
         }
         response = client.post(url, data)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
 
-        response_data = json.loads(str(response.content, encoding='utf8'))
-        self.assertEqual(response_data, {
-            'nfc_id': card.nfc_id,
-            'credits': 10
-        })
-
-        self.assertEqual(LogCredits.objects.count(), 1)
-
+        # consume credits
         data = {
             'nfc_id': card.nfc_id,
             'amount': -10
@@ -226,7 +220,7 @@ class TestLabAdmin(TestCase):
             'credits': 0
         })
 
-        self.assertEqual(LogCredits.objects.count(), 2)
+        self.assertEqual(LogCredits.objects.count(), 1)
 
         data = {
             'nfc_id': 0

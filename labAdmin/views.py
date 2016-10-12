@@ -236,8 +236,8 @@ class CardCredits(APIView):
 
     The return value is a json array with the nfc_id and new credits amount for the card.
 
-    The amount could be negative and if there's not enough credits it'll returns 403 status code
-    If the nfc code isn't valid a 'LogError' instance is saved and returns 400 status code
+    The amount must be negative and if there's not enough credits it'll returns 403 status code
+    If the amount or the nfc code isn't valid a 'LogError' instance is saved and status code 400 returned
     """
     def post(self, request, format=None):
         serializer = CardUpdateSerializer(data=request.data)
@@ -256,6 +256,13 @@ class CardCredits(APIView):
                     return Response("", status=status.HTTP_400_BAD_REQUEST)
 
                 amount = serializer.data['amount']
+                if amount >= 0:
+                    msg = "Api: Update Card Credits - amount can only be negative: {}".format(
+                        amount
+                    )
+                    LogError(description=msg, code=nfc).save()
+                    return Response("", status=status.HTTP_400_BAD_REQUEST)
+
                 new_amount = card.credits + amount
                 if new_amount < 0:
                     msg = "Api: Update Card Credits - Not enough credits: requested {} of {} available".format(
