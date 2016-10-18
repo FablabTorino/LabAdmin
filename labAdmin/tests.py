@@ -8,7 +8,7 @@ from django.utils import timezone, dateparse
 
 from .models import (
     Card, Group, LogAccess, Role, TimeSlot, UserProfile, TimeSlot,
-    LogCredits
+    LogCredits, Category, Device
 )
 
 
@@ -58,8 +58,20 @@ class TestLabAdmin(TestCase):
         )
         u.groups.add(guest_group)
 
+        category = Category.objects.create(
+            name="category"
+        )
+
+        device = Device.objects.create(
+            name="device",
+            hourlyCost=1.0,
+            category=category,
+            mac="00:00:00:00:00:00"
+        )
+
         cls.card = card
         cls.userprofile = u
+        cls.device = device
 
     def test_login_by_nfc(self):
         client = Client()
@@ -157,6 +169,7 @@ class TestLabAdmin(TestCase):
         self.assertEqual(ts_now.first().pk, open_ts.pk)
 
     def test_get_card_credits(self):
+
         client = Client()
         url = reverse('card-credits')
         card = Card.objects.create(
@@ -166,8 +179,11 @@ class TestLabAdmin(TestCase):
         data = {
             'nfc_id': card.nfc_id
         }
-        response = client.get(url, data)
+
+        auth = 'Token {}'.format(self.device.token)
+        response = client.get(url, data, HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 200)
+
         response_data = json.loads(str(response.content, encoding='utf8'))
         self.assertEqual(response_data, {
             'nfc_id': card.nfc_id,
@@ -177,11 +193,16 @@ class TestLabAdmin(TestCase):
         data = {
             'nfc_id': 0
         }
-        response = client.get(url, data)
+        response = client.get(url, data, HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 400)
+
+        # no auth token
+        response = client.get(url, data)
+        self.assertEqual(response.status_code, 403)
 
     def test_update_card_credits(self):
         client = Client()
+        auth = 'Token {}'.format(self.device.token)
         url = reverse('card-credits')
         card = Card.objects.create(
             nfc_id=1,
@@ -195,7 +216,7 @@ class TestLabAdmin(TestCase):
             'nfc_id': card.nfc_id,
             'amount': -20
         }
-        response = client.post(url, data)
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 403)
 
         # can't add credits
@@ -203,7 +224,7 @@ class TestLabAdmin(TestCase):
             'nfc_id': card.nfc_id,
             'amount': 10
         }
-        response = client.post(url, data)
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 400)
 
         # consume credits
@@ -211,7 +232,7 @@ class TestLabAdmin(TestCase):
             'nfc_id': card.nfc_id,
             'amount': -10
         }
-        response = client.post(url, data)
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 200)
 
         response_data = json.loads(str(response.content, encoding='utf8'))
@@ -225,12 +246,38 @@ class TestLabAdmin(TestCase):
         data = {
             'nfc_id': 0
         }
-        response = client.post(url, data)
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 400)
 
         data = {
             'nfc_id': 1,
             'amount': 'amount'
         }
-        response = client.post(url, data)
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 400)
+
+        # no auth
+        data = {
+            'nfc_id': 0
+        }
+        response = client.post(url, data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_device_token_creation(self):
+        category = Category.objects.create(
+            name="category"
+        )
+
+        device = Device.objects.create(
+            name="device",
+            hourlyCost=1.0,
+            category=category,
+            mac="00:00:00:00:00:00"
+        )
+        self.assertTrue(device.token)
+
+        # token is created once
+        old_token = device.token
+        device.save()
+        device = Device.objects.get(pk=device.pk)
+        self.assertEqual(old_token, device.token)

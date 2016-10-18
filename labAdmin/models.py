@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 import decimal
+import uuid
 
 
 class TimeSlotManager(models.Manager):
@@ -183,13 +184,19 @@ class Role(models.Model):
         return "%s - %s" % (self.name, self.ROLE_KIND_CHOICES[self.role_kind][1])
 
 class Device(models.Model):
-    name=models.CharField(max_length=100)
-    hourlyCost=models.FloatField(default=0.0)
-    category=models.ForeignKey('Category')
-    mac=models.CharField(max_length=30)
+    name = models.CharField(max_length=100)
+    hourlyCost = models.FloatField(default=0.0)
+    category = models.ForeignKey('Category')
+    mac = models.CharField(max_length=30)
+    token = models.CharField(max_length=64, null=True, blank=True)
 
     def __str__(self):
         return "%010d - %s" %(self.id, self.name)
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = str(uuid.uuid4())
+        super(Device, self).save(*args, **kwargs)
 
 class Payment(models.Model):
     date = models.DateField(default=timezone.now().today)

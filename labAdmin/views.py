@@ -13,6 +13,8 @@ from oauth2_provider.models import AccessToken
 
 from labAdmin import functions
 
+from .permissions import DeviceTokenPermission
+
 
 class LoginByNFC(APIView):
     """
@@ -218,6 +220,8 @@ class CardCredits(APIView):
 
     If the nfc code isn't valid a 'LogError' instance is saved and returns 400 status code
     """
+
+    permission_classes = (DeviceTokenPermission,)
 
     def get(self, request, format=None):
         nfc = request.query_params.get('nfc_id')
