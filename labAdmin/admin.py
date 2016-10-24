@@ -1,7 +1,16 @@
 from django.contrib import admin
 from labAdmin.models import *
 
-# Register your models here.
+
+class CardAdmin(admin.ModelAdmin):
+    list_display = ('nfc_id', 'credits')
+
+    def save_model(self, request, obj, form, change):
+        obj.save()
+        obj.log_credits_update(amount=obj.credits, user=request.user, from_admin=True)
+
+admin.site.register(Card, CardAdmin)
+
 
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('name', 'card', 'displaygroups','firstSignup', 'lastSignup', 'subscription')
@@ -64,6 +73,12 @@ class LogErrorAdmin(admin.ModelAdmin):
     ordering = ('-datetime',)
 
 admin.site.register(LogError, LogErrorAdmin)
+
+class LogCreditsAdmin(admin.ModelAdmin):
+    list_display = ('datetime', 'card', 'amount', 'user', 'from_admin')
+    list_filter = ('user',)
+
+admin.site.register(LogCredits, LogCreditsAdmin)
 
 
 class TimeSlotAdmin(admin.ModelAdmin):

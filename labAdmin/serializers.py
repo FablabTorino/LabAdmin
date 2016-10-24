@@ -1,4 +1,6 @@
-from labAdmin.models import *
+from labAdmin.models import (
+    Card, UserProfile
+)
 
 from rest_framework import serializers
 
@@ -9,6 +11,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ('id','name')
 
+
+class CardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Card
+        fields = ('nfc_id', 'credits')
+
+
+class CardUpdateSerializer(serializers.Serializer):
+    nfc_id = serializers.IntegerField()
+    amount = serializers.IntegerField()
 
 # class LogdoorSerializer(serializers.ModelSerializer):
 #

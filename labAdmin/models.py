@@ -2,8 +2,21 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 import decimal
+import uuid
 
-# Create your models here.
+
+class TimeSlotManager(models.Manager):
+    def can_now(self):
+        """Filters the queryset for this moment"""
+        n = timezone.now()
+        qs = self.get_queryset()
+        return qs.filter(
+            hour_start__lte=n.time(),
+            hour_end__gte=n.time(),
+            weekday_start__lte=n.isoweekday(),
+            weekday_end__gte=n.isoweekday()
+        )
+
 
 class TimeSlot(models.Model):
     """
@@ -24,6 +37,8 @@ class TimeSlot(models.Model):
     hour_start=models.TimeField()
     hour_end=models.TimeField()
 
+    objects = TimeSlotManager()
+
     def have_permission_now(self):
         n = timezone.now()
         return self.weekday_start <= n.weekday <= self.weekday_end and self.hour_start <= n.time <= self.hour_end
@@ -31,12 +46,23 @@ class TimeSlot(models.Model):
     def __str__(self):
         return "%s: %s - %s, %s - %s"%(self.name, self.WEEKDAY_CHOICES[self.weekday_start-1][1],self.WEEKDAY_CHOICES[self.weekday_end-1][1],self.hour_start,self.hour_end)
 
+
 class Card(models.Model):
     """A card with a radio device"""
     nfc_id = models.BigIntegerField(unique=True)
+    credits = models.IntegerField(default=0)
 
     def __str__(self):
         return "{}".format(self.nfc_id)
+
+    def log_credits_update(self, amount, user=None, from_admin=False):
+        LogCredits.objects.create(
+            card=self,
+            amount=amount,
+            user=user,
+            from_admin=from_admin
+        )
+
 
 class UserProfile(models.Model):
     """
@@ -56,30 +82,28 @@ class UserProfile(models.Model):
     endSubscription = models.DateField()
     needSubscription = models.BooleanField(default=True)
 
-    card = models.ForeignKey(Card, null=True, blank=True)
+    card = models.OneToOneField(Card, null=True, blank=True)
 
     # define Many-To-Many fields
     groups=models.ManyToManyField('Group')
 
     def subscription_end(self):
-        return self.endSubscription if self.needSubcription else "Subcription not needed"
+        return self.endSubscription if self.needSubscription else "Subscription not needed"
 
     def subscriptionExpired(self):
-        return self.needSubcription and self.endSubscription < timezone.now()
+        return self.needSubscription and self.endSubscription < timezone.now()
 
     def can_open_door_now(self):
         # Define groups and role
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group__user=self,role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role__group__user=self,role__role_kind=0,role__valid=True).exists()
         except:
             # Any Exception Return False
             return False
 
     def can_use_device_now(self, device):
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group__user=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role__group__user=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
         except:
             # Any Exception Return False
             return False
@@ -110,16 +134,14 @@ class Group(models.Model):
     def can_open_door_now(self):
         # Define groups and role
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group=self,role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role__group=self,role__role_kind=0,role__valid=True).exists()
         except:
             # Any Exception return False
             return False
 
     def can_use_device_now(self, device):
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role__group=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role__group=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
         except:
             # Any Exception return False
             return False
@@ -146,16 +168,14 @@ class Role(models.Model):
     def can_open_door_now(self):
         # Define groups and role
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role=self, role__role_kind=0,role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role=self, role__role_kind=0,role__valid=True).exists()
         except:
             # Any Exception return False
             return False
 
     def can_use_device_now(self, device):
         try:
-            n = timezone.now()
-            return len(TimeSlot.objects.filter(role=self, role__role_kind=1, role__category_device=device.category_device, role__valid=True,hour_start__lte=n.time(),hour_end__gte=n.time(),weekday_start__lte=n.isoweekday(),weekday_end__gte=n.isoweekday())) > 0
+            return TimeSlot.objects.can_now().filter(role=self, role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
         except:
             # Any Exception Return False
             return False
@@ -164,13 +184,19 @@ class Role(models.Model):
         return "%s - %s" % (self.name, self.ROLE_KIND_CHOICES[self.role_kind][1])
 
 class Device(models.Model):
-    name=models.CharField(max_length=100)
-    hourlyCost=models.FloatField(default=0.0)
-    category=models.ForeignKey('Category')
-    mac=models.CharField(max_length=30)
+    name = models.CharField(max_length=100)
+    hourlyCost = models.FloatField(default=0.0)
+    category = models.ForeignKey('Category')
+    mac = models.CharField(max_length=30)
+    token = models.CharField(max_length=64, null=True, blank=True)
 
     def __str__(self):
         return "%010d - %s" %(self.id, self.name)
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = str(uuid.uuid4())
+        super(Device, self).save(*args, **kwargs)
 
 class Payment(models.Model):
     date = models.DateField(default=timezone.now().today)
@@ -220,3 +246,26 @@ class LogDevice(models.Model):
 
     def __str__(self):
         return "user: %s\ndevice: %s\nboot: %s\nstart: %s\ninWorking: %s\nHourlyCost: %f" %(self.user, self.device, self.bootDevice, self.startWork, "yes" if self.inWorking else "no\nshutdown: %s\nfinish: %s"%(self.shutdownDevice, self.finishWork), self.hourlyCost)
+
+
+class LogCredits(models.Model):
+    datetime = models.DateTimeField(default=timezone.now)
+    card = models.ForeignKey(Card)
+    amount = models.IntegerField()
+    user = models.ForeignKey(User, null=True, blank=True)
+    from_admin = models.BooleanField(default=False)
+
+    def __str__(self):
+        if from_admin:
+            return '{} {} set credits for card {} to {} from admin'.format(
+                self.datetime,
+                self.user,
+                self.card,
+                self.amount
+            )
+        return '{} {} updated credits for card {} by {}'.format(
+            self.datetime,
+            self.user if user else '<AnonymousUser>',
+            self.card,
+            self.amount
+        )
