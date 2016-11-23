@@ -1,175 +1,271 @@
 from django.db import models
+from django.contrib.auth.models import User
 from django.utils import timezone
-from django import forms
+import decimal
+import uuid
 
-from django.db import models
 
-# Create your models here.
+class TimeSlotManager(models.Manager):
+    def can_now(self):
+        """Filters the queryset for this moment"""
+        n = timezone.now()
+        qs = self.get_queryset()
+        return qs.filter(
+            hour_start__lte=n.time(),
+            hour_end__gte=n.time(),
+            weekday_start__lte=n.isoweekday(),
+            weekday_end__gte=n.isoweekday()
+        )
 
-class User(models.Model):
-    username=models.CharField(max_length=200)
-    utype=models.ForeignKey('Usertype')
-    signup=models.DateTimeField()
-    subscriptionEnd=models.DateTimeField()
-    needSubcription=models.BooleanField(default=True)
-    nfcId=models.IntegerField(default=0)
 
-    def subscription_end(self):
-        return self.subscriptionEnd if self.needSubcription else "Don\'t need subcription"
+class TimeSlot(models.Model):
+    """
+    TimeSlots are assigned to Roles
+    """
+    WEEKDAY_CHOICES = (
+        (1,'Monday'),
+        (2,'Tuesday'),
+        (3,'Wednesday'),
+        (4,'Thursday'),
+        (5,'Friday'),
+        (6,'Saturday'),
+        (7,'Sunday')
+    )
+    name=models.CharField(max_length=50)
+    weekday_start=models.SmallIntegerField(default=0, choices=WEEKDAY_CHOICES)
+    weekday_end=models.SmallIntegerField(default=0, choices=WEEKDAY_CHOICES)
+    hour_start=models.TimeField()
+    hour_end=models.TimeField()
+
+    objects = TimeSlotManager()
 
     def have_permission_now(self):
-        wdperm_bin = self.utype.weekdays_permission_binary()
         n = timezone.now()
-        day_bin = 1 << n.weekday()
-        return day_bin & wdperm_bin == day_bin and self.utype.hourStart <= n.time() <= self.utype.hourEnd
-
-    # def openDoor(self):
-    #     if self.have_permission_now():
-    #         opened = True
-    #         # Function For Open The Door
-    #     else:
-    #         opened = False
-    #
-    #     l = Logdoor(user=self,doorOpened=opened)
-    #     l.save()
-    #
-    #     return opened
-
-    #
-    # Methods For Using Devices
-    #
-    #
-    # def have_permission_for_device(self, dev):
-    #     devtype = dev.dtype
-    #     try:
-    #         pp = Permission.objects.get(user=self, devicetype=devtype)
-    #         print(pp)
-    #         return pp.level
-    #     except Permission.DoesNotExist:
-    #         print("Does Not Exist Any Permission Object")
-    #         return 0
-    #
-    # def useDevice(self, dev):
-    #     if self.have_permission_now:
-    #         if self.haveself.have_permission_for_device(dev):
-    #             boot = dev.boot()
-    #             workstart = dev.start()
-    #             workfinish = dev.end()
-    #             shutdown = dev.shutdown()
-    #             hcost = dev.hourlyCost
-    #
-    #             Logdevice(user=user,device=dev, hourlyCost=hcost, bootDevice=boot, shutdownDevice=shutdown, startWork=workstart,finishWork=workfinish).save()
-    #
-    #             return True
-    #         else:
-    #             print("You haven\'t the permission for use this kind of devices")
-    #             return False
-    #     else:
-    #         print("You haven\'t the permission for use this kind of devices in this moment")
-    #         return False
-
+        return self.weekday_start <= n.weekday <= self.weekday_end and self.hour_start <= n.time <= self.hour_end
 
     def __str__(self):
-        return self.username
+        return "%s: %s - %s, %s - %s"%(self.name, self.WEEKDAY_CHOICES[self.weekday_start-1][1],self.WEEKDAY_CHOICES[self.weekday_end-1][1],self.hour_start,self.hour_end)
 
-class Usertype(models.Model):
+
+class Card(models.Model):
+    """A card with a radio device"""
+    nfc_id = models.BigIntegerField(unique=True)
+    credits = models.IntegerField(default=0)
+
+    def __str__(self):
+        return "{}".format(self.nfc_id)
+
+    def log_credits_update(self, amount, user=None, from_admin=False):
+        LogCredits.objects.create(
+            card=self,
+            amount=amount,
+            user=user,
+            from_admin=from_admin
+        )
+
+
+class UserProfile(models.Model):
+    """
+    The User Profile
+    """
+    user=models.OneToOneField(User)
+
     name=models.CharField(max_length=200)
-    monday=models.BooleanField(default=False)
-    tuesday=models.BooleanField(default=False)
-    wednesday=models.BooleanField(default=False)
-    thursday=models.BooleanField(default=False)
-    friday=models.BooleanField(default=False)
-    saturday=models.BooleanField(default=False)
-    sunday=models.BooleanField(default=False)
-    hourStart = models.TimeField()
-    hourEnd = models.TimeField()
-    isAdmin=models.BooleanField(default=False)
+    address = models.CharField(max_length=200, null=True, blank=True)
+    tax_code = models.CharField(max_length=50, null=True, blank=True)
+    vat_id = models.CharField(max_length=50, null=True, blank=True)
+    picture = models.ImageField(upload_to="labadmin/users/pictures", null=True, blank=True)
+    bio = models.TextField(null=True, blank=True)
 
-    def weekdays(self):
-        ss = ""
-        if self.monday:
-            ss+="Mon;"
-        if self.tuesday:
-            ss+="Tue;"
-        if self.wednesday:
-            ss+="Wed;"
-        if self.thursday:
-            ss+="Thu;"
-        if self.friday:
-            ss+="Fri;"
-        if self.saturday:
-            ss+="Sat;"
-        if self.sunday:
-            ss+="Sun;"
+    firstSignup = models.DateField(null=True)
+    lastSignup = models.DateField(null=True)
+    endSubscription = models.DateField()
+    needSubscription = models.BooleanField(default=True)
 
-        return ss if len(ss) > 0 else ""
+    card = models.OneToOneField(Card, null=True, blank=True)
 
-    def weekdays_permission_binary(self):
-        p = 0
-        p += 1<<0 if self.monday else 0
-        p += 1<<1 if self.tuesday else 0
-        p += 1<<2 if self.wednesday else 0
-        p += 1<<3 if self.thursday else 0
-        p += 1<<4 if self.friday else 0
-        p += 1<<5 if self.saturday else 0
-        p += 1<<6 if self.sunday else 0
+    # define Many-To-Many fields
+    groups=models.ManyToManyField('Group')
 
-        return p
+    def subscription_end(self):
+        return self.endSubscription if self.needSubscription else "Subscription not needed"
 
-    def weekdays_permission_binary_str(self):
-        return "{0:07b}".format(self.weekdays_permission_binary())
+    def subscriptionExpired(self):
+        return self.needSubscription and self.endSubscription < timezone.now()
+
+    def can_open_door_now(self):
+        # Define groups and role
+        try:
+            return TimeSlot.objects.can_now().filter(role__group__user=self,role__role_kind=0,role__valid=True).exists()
+        except:
+            # Any Exception Return False
+            return False
+
+    def can_use_device_now(self, device):
+        try:
+            return TimeSlot.objects.can_now().filter(role__group__user=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
+        except:
+            # Any Exception Return False
+            return False
+
+    def displaygroups(self):
+        data = []
+        for g in self.groups.all():
+            data.append(g.name)
+        return ",".join(data)
 
     def __str__(self):
         return self.name
+
+class Category(models.Model):
+    name=models.CharField(max_length=50)
+
+    class Meta:
+        verbose_name_plural = "categories"
+
+    def __str__(self):
+        return "%s"%(self.name)
+
+class Group(models.Model):
+    name=models.CharField(max_length=50)
+    # define Many-To-Many fields
+    roles=models.ManyToManyField('Role')
+
+    def can_open_door_now(self):
+        # Define groups and role
+        try:
+            return TimeSlot.objects.can_now().filter(role__group=self,role__role_kind=0,role__valid=True).exists()
+        except:
+            # Any Exception return False
+            return False
+
+    def can_use_device_now(self, device):
+        try:
+            return TimeSlot.objects.can_now().filter(role__group=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
+        except:
+            # Any Exception return False
+            return False
+
+    def __str__(self):
+        return "%s" % (self.name)
+
+class Role(models.Model):
+    # define role kind choices
+    ROLE_KIND_CHOICES = (
+        (0, "Door Access"),
+        (1, "Use Device"),
+    )
+
+    name=models.CharField(max_length=50)
+
+    role_kind=models.IntegerField(choices=ROLE_KIND_CHOICES)
+    time_slots=models.ManyToManyField(TimeSlot)
+    valid=models.BooleanField(default=True)
+
+    # define Many-To-Many Fieds
+    categories=models.ManyToManyField('Category',blank=True)
+
+    def can_open_door_now(self):
+        # Define groups and role
+        try:
+            return TimeSlot.objects.can_now().filter(role=self, role__role_kind=0,role__valid=True).exists()
+        except:
+            # Any Exception return False
+            return False
+
+    def can_use_device_now(self, device):
+        try:
+            return TimeSlot.objects.can_now().filter(role=self, role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
+        except:
+            # Any Exception Return False
+            return False
+
+    def __str__(self):
+        return "%s - %s" % (self.name, self.ROLE_KIND_CHOICES[self.role_kind][1])
 
 class Device(models.Model):
-    name=models.CharField(max_length=200)
-    dtype=models.ForeignKey('Devicetype')
+    name = models.CharField(max_length=100)
+    hourlyCost = models.FloatField(default=0.0)
+    category = models.ForeignKey('Category')
+    mac = models.CharField(max_length=30)
+    token = models.CharField(max_length=64, null=True, blank=True)
+
+    def __str__(self):
+        return "%010d - %s" %(self.id, self.name)
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = str(uuid.uuid4())
+        super(Device, self).save(*args, **kwargs)
+
+class Payment(models.Model):
+    date = models.DateField(default=timezone.now().today)
+    value=models.FloatField(default=0.0)
+    user=models.ForeignKey(UserProfile)
+
+class LogError(models.Model):
+    datetime = models.DateTimeField(default=timezone.now)
+    description=models.CharField(max_length=200)
+    code=models.CharField(default='',blank=True,max_length=200)
+
+class LogAccessManager(models.Manager):
+    def log(self, card, users, opened):
+        l = LogAccess.objects.create(card=card, opened=opened)
+        l.users.add(*users)
+        return l
+
+class LogAccess(models.Model):
+    datetime = models.DateTimeField(default=timezone.now)
+    card = models.ForeignKey(Card)
+    users = models.ManyToManyField(UserProfile)
+    opened = models.BooleanField(default=False)
+
+    objects= LogAccessManager()
+
+    def __str__(self):
+        return "%s Enter in Fablab it %s: Enter %sPermitted" % (self.card, self.datetime, "Not " if not self.opened else "")
+
+class LogDevice(models.Model):
     hourlyCost=models.FloatField(default=0.0)
-
-    def __str__(self):
-        return self.name
-
-class Devicetype(models.Model):
-    name=models.CharField(max_length=200)
-
-    def __str__(self):
-        return self.name
-
-class Permission(models.Model):
-    level=models.IntegerField(default=0)
-    user=models.ForeignKey('User', null=False)
-    devicetype=models.ForeignKey('Devicetype', null=False)
-
-    def __str__(self):
-        return "{0} - {1} - Permission Level: {2}".format(self.user,self.devicetype,self.level)
-
-    def changePermissionLevel(self, level):
-        self.level = level
-
-
-class Logdoor(models.Model):
-    hour=models.DateTimeField(default=timezone.now)
-    doorOpened=models.BooleanField(default=False)
-    user=models.ForeignKey('User')
-
-    def wasOpen(self):
-        return self.doorOpened
-
-    def openDoor(self):
-        self.doorOpened = True
-
-    def closeDoor(self):
-        self.doorOpened = False
-
-    def __str__(self):
-        return "{0} Enters in Fablab at {1} : {2}".format(self.user, self.hour.strftime("%Y-%m-%d %H:%M:%S"),"Permitted" if self.doorOpened else "Not Permitted")
-
-class Logdevice(models.Model):
+    user=models.ForeignKey('UserProfile')
+    device=models.ForeignKey('Device')
     bootDevice=models.DateTimeField()
-    shutdownDevice=models.DateTimeField()
     startWork=models.DateTimeField()
     finishWork=models.DateTimeField()
-    hourlyCost=models.FloatField(default=0.0)
-    user=models.ForeignKey('User')
-    device=models.ForeignKey('Device')
+    shutdownDevice=models.DateTimeField()
+    inWorking=models.BooleanField(default=True)
+
+    def priceWork(self):
+        c = (finishWork-startWork)
+        duration = 0.01*decimal.Decimal((c.days*24+c.seconds/3600)*100)
+        return 'inWorking...' if self.inWorking else self.hourlyCost*duration
+
+    def stop(self):
+        n = timezone.now()
+        self.finishWork = self.shutdownDevice = n
+
+    def __str__(self):
+        return "user: %s\ndevice: %s\nboot: %s\nstart: %s\ninWorking: %s\nHourlyCost: %f" %(self.user, self.device, self.bootDevice, self.startWork, "yes" if self.inWorking else "no\nshutdown: %s\nfinish: %s"%(self.shutdownDevice, self.finishWork), self.hourlyCost)
+
+
+class LogCredits(models.Model):
+    datetime = models.DateTimeField(default=timezone.now)
+    card = models.ForeignKey(Card)
+    amount = models.IntegerField()
+    user = models.ForeignKey(User, null=True, blank=True)
+    from_admin = models.BooleanField(default=False)
+
+    def __str__(self):
+        if from_admin:
+            return '{} {} set credits for card {} to {} from admin'.format(
+                self.datetime,
+                self.user,
+                self.card,
+                self.amount
+            )
+        return '{} {} updated credits for card {} by {}'.format(
+            self.datetime,
+            self.user if user else '<AnonymousUser>',
+            self.card,
+            self.amount
+        )
