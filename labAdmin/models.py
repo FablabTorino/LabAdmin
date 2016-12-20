@@ -94,12 +94,10 @@ class UserProfile(models.Model):
         return self.needSubscription and self.endSubscription < timezone.now()
 
     def can_open_door_now(self):
-        # Define groups and role
-        try:
-            return TimeSlot.objects.can_now().filter(role__group__user=self,role__role_kind=0,role__valid=True).exists()
-        except:
-            # Any Exception Return False
-            return False
+        roles = self.groups.values_list('roles__pk', flat=True).distinct()
+        return TimeSlot.objects.can_now().filter(
+            role__in=roles, role__role_kind=0, role__valid=True
+        ).exists()
 
     def can_use_device_now(self, device):
         try:
