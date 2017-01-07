@@ -19,7 +19,7 @@ import httplib
 
 
 #url of the server also, it is possible to edit /etc/hosts in order to mask ip 
-baseurl='192.168.0.217:8443'
+baseurl='labchat.officine.cc:8443'
 
 #taken from urls.py in labadmin repository on github
 urls={'doorNFC':'/labadmin/labAdmin/opendoorbynfc/','userUpd':'/labadmin/labAdmin\updateUsers/','id':'/labadmin/labAdmin/user/identity/','nfcUs':'/labadmin/labAdmin/nfc/users/','cred':'labadmin/labAdmin/card/credits/'}
