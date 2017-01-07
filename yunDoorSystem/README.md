@@ -44,7 +44,3 @@ Once the IDE is ready and Python modules installed and everything is wired, it's
 ## Running the tests
 
 If the labchat server is up and running, you can insert user profiles, associating to them some cards and time slots, and start testing the system.
-
-## Authors
-
-* **Fedele Tagarelli** - [Tagaf](https://github.com/tagaf)
