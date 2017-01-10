@@ -114,7 +114,6 @@ void loop(void) {
     //build command to run in order to send POST request
     suid = String("python -O ~/openDoorByNFCLinino.py " + String(cardId));
 #ifdef DEBUG
-    suid = String("python -O ~/openDoorByNFCLinino.py " + String(cardId));
     Serial.println(suid);
 #endif
     //send command
@@ -172,7 +171,7 @@ void loop(void) {
       lcd.clear();
       lcd.print("Accesso Negato");
       lcd.setCursor(0, 1);
-      lcd.print("Fuori Orario");
+      lcd.print(r2);
       delay(1000);
       len = r2.length();
       r2.remove(len - 1, 1);
