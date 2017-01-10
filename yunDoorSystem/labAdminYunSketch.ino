@@ -204,8 +204,8 @@ void loop(void) {
 }//end of loop
 
 void apriPorta(int porta, int del) {
-  digitalWrite(porta, LOW);
-  delay(del);
   digitalWrite(porta, HIGH);
+  delay(del);
+  digitalWrite(porta, LOW);
 
 }
