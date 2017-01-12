@@ -297,3 +297,24 @@ class TestLabAdmin(TestCase):
         self.assertEqual(logdevice.startWork, logdevice.bootDevice)
         self.assertTrue(logdevice.startWork < logdevice.finishWork)
         self.assertEqual(logdevice.finishWork, logdevice.shutdownDevice)
+
+    def test_device_last_activity(self):
+        self.assertEqual(self.device.last_activity(), '')
+
+        now = timezone.now()
+        logdevice = LogDevice.objects.create(
+            device=self.device,
+            user=self.userprofile,
+            bootDevice=now,
+            startWork=now,
+            shutdownDevice=now,
+            finishWork=now,
+            hourlyCost=self.device.hourlyCost,
+        )
+
+        self.assertTrue(logdevice.inWorking)
+        self.assertTrue(self.device.last_activity() >= logdevice.startWork)
+
+        logdevice.stop()
+        self.assertFalse(logdevice.inWorking)
+        self.assertEqual(self.device.last_activity(), logdevice.finishWork)

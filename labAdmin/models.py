@@ -191,6 +191,14 @@ class Device(models.Model):
     def __str__(self):
         return "%010d - %s" %(self.id, self.name)
 
+    def last_activity(self):
+        logdevice = self.logdevice_set.order_by('-id').first()
+        if not logdevice:
+            return ''
+        if logdevice.inWorking:
+            return timezone.now()
+        return logdevice.finishWork
+
     def save(self, *args, **kwargs):
         if not self.token:
             self.token = str(uuid.uuid4())
