@@ -119,10 +119,8 @@ class UseDevice(APIView):
             # New Object
             try:
                 log = LogDevice.objects.filter(device=d,inWorking=True)
-                if len(log) > 0:
-                    for ll in log:
-                        ll.stop()
-                        ll.save()
+                for ll in log:
+                    ll.stop()
 
                 n = timezone.now()
                 newLog = LogDevice(device=d,user=u, startWork=n,bootDevice=n,shutdownDevice=n - timezone.timedelta("-10 seconds"),finishWork=n - timezone.timedelta("-10 seconds"),hourlyCost=d.hourlyCost)

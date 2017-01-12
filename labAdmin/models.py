@@ -240,7 +240,10 @@ class LogDevice(models.Model):
 
     def stop(self):
         n = timezone.now()
-        self.finishWork = self.shutdownDevice = n
+        self.inWorking = False
+        self.finishWork = n
+        self.shutdownDevice = n
+        self.save(update_fields=['finishWork', 'shutdownDevice', 'inWorking'])
 
     def __str__(self):
         return "user: %s\ndevice: %s\nboot: %s\nstart: %s\ninWorking: %s\nHourlyCost: %f" %(self.user, self.device, self.bootDevice, self.startWork, "yes" if self.inWorking else "no\nshutdown: %s\nfinish: %s"%(self.shutdownDevice, self.finishWork), self.hourlyCost)

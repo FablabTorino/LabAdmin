@@ -8,7 +8,7 @@ from django.utils import timezone, dateparse
 
 from .models import (
     Card, Group, LogAccess, Role, TimeSlot, UserProfile, TimeSlot,
-    LogCredits, Category, Device
+    LogCredits, Category, Device, LogDevice
 )
 
 
@@ -281,3 +281,19 @@ class TestLabAdmin(TestCase):
         device.save()
         device = Device.objects.get(pk=device.pk)
         self.assertEqual(old_token, device.token)
+
+    def test_device_stop(self):
+        now = timezone.now()
+        logdevice = LogDevice.objects.create(
+            device=self.device,
+            user=self.userprofile,
+            bootDevice=now,
+            startWork=now,
+            shutdownDevice=now,
+            finishWork=now,
+            hourlyCost=self.device.hourlyCost,
+        )
+        logdevice.stop()
+        self.assertEqual(logdevice.startWork, logdevice.bootDevice)
+        self.assertTrue(logdevice.startWork < logdevice.finishWork)
+        self.assertEqual(logdevice.finishWork, logdevice.shutdownDevice)
