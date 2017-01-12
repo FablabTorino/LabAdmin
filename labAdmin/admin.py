@@ -3,9 +3,12 @@ from labAdmin.models import *
 
 
 class CardAdmin(admin.ModelAdmin):
-    list_display = ('nfc_id', 'credits')
-    search_fields = ('nfc_id',)
+    list_display = ('nfc_id', 'user', 'credits')
+    search_fields = ('nfc_id', 'userprofile__user__username')
     ordering = ('-nfc_id',)
+
+    def user(self, obj):
+        return obj.userprofile.user
 
     def save_model(self, request, obj, form, change):
         obj.save()
