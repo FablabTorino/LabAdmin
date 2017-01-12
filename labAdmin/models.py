@@ -242,9 +242,11 @@ class LogDevice(models.Model):
     inWorking=models.BooleanField(default=True)
 
     def priceWork(self):
-        c = (finishWork-startWork)
-        duration = 0.01*decimal.Decimal((c.days*24+c.seconds/3600)*100)
-        return 'inWorking...' if self.inWorking else self.hourlyCost*duration
+        if self.inWorking:
+            return 'inWorking...'
+        delta = self.finishWork - self.startWork
+        duration = delta.total_seconds() / 3600
+        return round(self.hourlyCost * duration, 2)
 
     def stop(self):
         n = timezone.now()
