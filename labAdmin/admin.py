@@ -4,6 +4,8 @@ from labAdmin.models import *
 
 class CardAdmin(admin.ModelAdmin):
     list_display = ('nfc_id', 'credits')
+    search_fields = ('nfc_id',)
+    ordering = ('-nfc_id',)
 
     def save_model(self, request, obj, form, change):
         obj.save()
