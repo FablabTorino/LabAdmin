@@ -1,5 +1,8 @@
 import datetime
 import json
+import io
+
+from unittest.mock import mock_open, patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase, Client
@@ -10,6 +13,7 @@ from .models import (
     Card, Group, LogAccess, Role, TimeSlot, UserProfile, TimeSlot,
     LogCredits, Category, Device
 )
+from .arp import get_neighbours
 
 
 class TestLabAdmin(TestCase):
@@ -281,3 +285,17 @@ class TestLabAdmin(TestCase):
         device.save()
         device = Device.objects.get(pk=device.pk)
         self.assertEqual(old_token, device.token)
+
+
+class ArpTests(TestCase):
+    def test_read_neighbours(self):
+         data = io.StringIO('\n'.join([
+             'IP address       HW type     Flags       HW address            Mask     Device',
+             '10.120.0.124     0x1         0x2         55:54:00:4a:b0:35     *        wlan0',
+             '10.120.71.14     0x1         0x2         e4:2d:8c:5e:05:18     *',
+             '169.254.52.147   0x1         0x0         00:00:00:00:00:00     *        virbr0'
+         ]))
+         with patch('builtins.open', return_value=data, create=True) as m:
+             result = list(get_neighbours())
+
+         self.assertEqual(result, [('10.120.0.124', '55:54:00:4a:b0:35')])
