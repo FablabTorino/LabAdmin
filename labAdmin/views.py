@@ -13,7 +13,9 @@ from oauth2_provider.models import AccessToken
 
 from labAdmin import functions
 
-from .permissions import DeviceTokenPermission
+from .permissions import (
+    get_token_from_request, DeviceTokenPermission
+)
 
 
 class LoginByNFC(APIView):
@@ -95,42 +97,55 @@ class GetDeviceByMac(APIView):
 
         return Response({"id":d.id,"name":d.name},status=status.HTTP_200_OK)
 
-class UseDevice(APIView):
+
+class DeviceStartUse(APIView):
     """
-    API for insert a new 'LogDevice' object if the user can use the device, else return an alert to client
+    API to track the start of a device usage by an user.
+    In case of success returns a json HTTP 201
+    Adds a new 'LogDevice' object if the user can use the device, otherwise returns an error.
+
     In order to use this API send a POST with the following values:
-        'deviceId': the id of device
-        'userId': the id of user
+        'nfc_id': the id of user
     """
-    def post(self,request,format=None):
-        u = functions.get_user_or_None(id=request.data.get('userId'))
 
-        if u is None:
-            LogError(description="Api: Use Device - user ID not valid",nfc=request.data.get('userId'))
-            return Response("",status=status.HTTP_400_BAD_REQUEST)
+    permission_classes = (DeviceTokenPermission,)
 
-        d = functions.get_device_or_None(id=request.data.get('deviceId'))
+    def post(self, request, format=None):
+        nfc_id = request.data.get('nfc_id')
+        try:
+            card = Card.objects.get(nfc_id=nfc_id)
+        except Card.DoesNotExist:
+            LogError(description="Api: Use Device - nfc ID not valid", code=nfc_id or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
 
-        if d is None:
-            LogError(description="Api: Use Device - device ID not valid",code=request.data.get('deviceId'))
-            return Response("",status=status.HTTP_400_BAD_REQUEST)
+        token = get_token_from_request(request)
+        try:
+            device = Device.objects.get(token=token)
+        except Card.DoesNotExist:
+            LogError(description="Api: Use Device - token not valid", code=token or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
 
-        if u.can_use_device_now(d):
-            # New Object
-            try:
-                log = LogDevice.objects.filter(device=d,inWorking=True)
-                for ll in log:
-                    ll.stop()
+        user = card.userprofile
+        if not user.can_use_device_now(device):
+            LogError(description="Api: Use Device - card {} can't use device {}".format(nfc_id, token))
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
 
-                n = timezone.now()
-                newLog = LogDevice(device=d,user=u, startWork=n,bootDevice=n,shutdownDevice=n - timezone.timedelta("-10 seconds"),finishWork=n - timezone.timedelta("-10 seconds"),hourlyCost=d.hourlyCost)
-                newLog.save()
-                return Response({"logId":n.id,"cost":n.hourlyCost,"canUse":True},status=status.HTTP_201_CREATED)
-            except:
-                return Response("Error during processing", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            LogError(description="Api: Use Device - the user %d can't use the device %d" % (u.id, d.id))
-            return Response("",status=status.HTTP_400_BAD_REQUEST)
+        # cleanup leaked instances
+        log = LogDevice.objects.filter(device=device, inWorking=True)
+        for ll in log:
+            ll.stop()
+
+        now = timezone.now()
+        log = LogDevice.objects.create(
+            device=device, user=user, startWork=now, bootDevice=now,
+            shutdownDevice=now + timezone.timedelta(seconds=10),
+            finishWork=now + timezone.timedelta(seconds=10),
+            hourlyCost=device.hourlyCost
+        )
+        return Response(
+            {"cost": log.hourlyCost}, status=status.HTTP_201_CREATED
+        )
+
 
 class tempUpdateUser(APIView):
     def post(self, request, format=None):

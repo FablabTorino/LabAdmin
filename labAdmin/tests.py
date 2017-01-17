@@ -29,6 +29,13 @@ class TestLabAdmin(TestCase):
             hour_start=dateparse.parse_time("14:0:0"),
             hour_end=dateparse.parse_time("20:0:0"),
         )
+        full_timeslot = TimeSlot.objects.create(
+            name="any day",
+            weekday_start=1,
+            weekday_end=7,
+            hour_start=dateparse.parse_time("00:00:00"),
+            hour_end=dateparse.parse_time("23:59:59"),
+        )
 
         fablab_role = Role.objects.create(
             name="Fablab Access",
@@ -42,10 +49,18 @@ class TestLabAdmin(TestCase):
         )
         guest_role.time_slots.add(reduced_timeslot)
 
+        full_devices_role = Role.objects.create(
+            name="Devices Access",
+            role_kind=1
+        )
+        full_devices_role.time_slots.add(full_timeslot)
+
         fab_guest_group = Group.objects.create(name="Fablab Guest")
         fab_guest_group.roles.add(fablab_role, guest_role)
         guest_group = Group.objects.create(name="Guest")
         guest_group.roles.add(guest_role)
+        devices_group = Group.objects.create(name="Full Devices access")
+        devices_group.roles.add(full_devices_role)
 
         card = Card.objects.create(nfc_id=123456)
         user = User.objects.create(username="alessandro.monaco")
@@ -57,6 +72,17 @@ class TestLabAdmin(TestCase):
             endSubscription=timezone.now()
         )
         u.groups.add(guest_group)
+        u.groups.add(devices_group)
+
+        noperm_card = Card.objects.create(nfc_id=654321)
+        noperm_user = User.objects.create(username="nopermission")
+        noperm_up = UserProfile.objects.create(
+            user=noperm_user,
+            card=noperm_card,
+            name="No Permission",
+            needSubscription=False,
+            endSubscription=timezone.now()
+        )
 
         category = Category.objects.create(
             name="category"
@@ -70,7 +96,9 @@ class TestLabAdmin(TestCase):
         )
 
         cls.card = card
+        cls.noperm_card = noperm_card
         cls.userprofile = u
+        cls.noperm_userprofile = noperm_up
         cls.device = device
 
     def test_login_by_nfc(self):
@@ -336,3 +364,61 @@ class TestLabAdmin(TestCase):
         logdevice.stop()
         self.assertFalse(logdevice.inWorking)
         self.assertEqual(self.device.last_activity(), logdevice.finishWork)
+
+    def test_device_start_use(self):
+        client = Client()
+        auth = 'Token {}'.format(self.device.token)
+        url = reverse('device-use-start')
+
+        self.assertFalse(LogDevice.objects.filter(device=self.device).exists())
+
+        # not authenticated
+        data = {
+            'nfc_id': self.card.nfc_id,
+        }
+        response = client.post(url, data)
+        self.assertEqual(response.status_code, 403)
+
+        # invalid data
+        data = {
+        }
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
+        self.assertEqual(response.status_code, 400)
+
+        data = {
+            'nfc_id': 0
+        }
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
+        self.assertEqual(response.status_code, 400)
+
+        # not enough permissions
+        data = {
+            'nfc_id': self.noperm_card.nfc_id,
+        }
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
+        self.assertEqual(response.status_code, 400)
+
+        # ok
+        data = {
+            'nfc_id': self.card.nfc_id,
+        }
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(LogDevice.objects.count(), 1)
+        self.assertTrue(
+            LogDevice.objects.filter(device=self.device, user=self.userprofile, inWorking=True).exists()
+        )
+        self.assertJSONEqual(response.content.decode('utf-8'), {
+            'cost': self.device.hourlyCost
+        })
+
+        # ok too but the previous LogDevice is closed
+        data = {
+            'nfc_id': self.card.nfc_id,
+        }
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(LogDevice.objects.count(), 2)
+        self.assertEqual(
+            LogDevice.objects.filter(device=self.device, user=self.userprofile, inWorking=True).count(), 1
+        )
