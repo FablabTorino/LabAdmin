@@ -4,15 +4,13 @@ from django.db import transaction, IntegrityError
 
 from labAdmin.serializers import *
 from labAdmin.models import *
-from labAdmin import functions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from oauth2_provider.models import AccessToken
 
-from labAdmin import functions
-
+from . import functions
 from .permissions import (
     get_token_from_request, DeviceTokenPermission
 )
