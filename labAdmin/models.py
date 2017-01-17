@@ -100,11 +100,10 @@ class UserProfile(models.Model):
         ).exists()
 
     def can_use_device_now(self, device):
-        try:
-            return TimeSlot.objects.can_now().filter(role__group__user=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
-        except:
-            # Any Exception Return False
-            return False
+        roles = self.groups.values_list('roles__pk', flat=True).distinct()
+        return TimeSlot.objects.can_now().filter(
+            role__in=roles, role__role_kind=1, role__valid=True
+        ).exists()
 
     def displaygroups(self):
         data = []
