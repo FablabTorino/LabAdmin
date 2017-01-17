@@ -422,3 +422,61 @@ class TestLabAdmin(TestCase):
         self.assertEqual(
             LogDevice.objects.filter(device=self.device, user=self.userprofile, inWorking=True).count(), 1
         )
+
+    def test_device_stop_use(self):
+        client = Client()
+        auth = 'Token {}'.format(self.device.token)
+        url = reverse('device-use-stop')
+
+        self.assertFalse(LogDevice.objects.filter(device=self.device).exists())
+
+        # not authenticated
+        data = {
+            'nfc_id': self.card.nfc_id,
+        }
+        response = client.post(url, data)
+        self.assertEqual(response.status_code, 403)
+
+        # invalid data
+        data = {
+        }
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
+        self.assertEqual(response.status_code, 400)
+
+        data = {
+            'nfc_id': 0
+        }
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
+        self.assertEqual(response.status_code, 400)
+
+        # no open logdevice
+        data = {
+            'nfc_id': self.card.nfc_id,
+        }
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
+        self.assertEqual(response.status_code, 400)
+
+        now = timezone.now()
+        LogDevice.objects.create(
+            device=self.device,
+            user=self.userprofile,
+            startWork=now,
+            bootDevice=now,
+            shutdownDevice=now,
+            finishWork=now,
+            hourlyCost="0.0"
+        )
+
+        # ok
+        data = {
+            'nfc_id': self.card.nfc_id,
+        }
+        response = client.post(url, data, HTTP_AUTHORIZATION=auth)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(LogDevice.objects.count(), 1)
+        self.assertTrue(
+            LogDevice.objects.filter(device=self.device, user=self.userprofile, inWorking=False).exists()
+        )
+        self.assertJSONEqual(response.content.decode('utf-8'), {
+            'cost': 0
+        })

@@ -147,6 +147,46 @@ class DeviceStartUse(APIView):
         )
 
 
+class DeviceStopUse(APIView):
+    """
+    API to track the stop of a device usage by an user.
+    In case of success returns a json HTTP 200
+    Updates the 'LogDevice' object for the user on this device, otherwise returns an error.
+
+    In order to use this API send a POST with the following values:
+        'nfc_id': the id of user
+    """
+
+    permission_classes = (DeviceTokenPermission,)
+
+    def post(self, request, format=None):
+        nfc_id = request.data.get('nfc_id')
+        try:
+            card = Card.objects.get(nfc_id=nfc_id)
+        except Card.DoesNotExist:
+            LogError(description="Api: Use Device - nfc ID not valid", code=nfc_id or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+        token = get_token_from_request(request)
+        try:
+            device = Device.objects.get(token=token)
+        except Card.DoesNotExist:
+            LogError(description="Api: Use Device - token not valid", code=token or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+        user = card.userprofile
+        try:
+            log = LogDevice.objects.get(device=device, user=user, inWorking=True)
+        except LogDevice.DoesNotExist:
+            code = "card {} for device with token {}".format(nfc_id, token)
+            LogError(description="Api: Use Device - no device log found", code=code).save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+        log.stop()
+
+        return Response({"cost": log.priceWork()}, status=status.HTTP_200_OK)
+
+
 class tempUpdateUser(APIView):
     def post(self, request, format=None):
         users = request.data.get('users')

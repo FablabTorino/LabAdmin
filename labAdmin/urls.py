@@ -9,6 +9,7 @@ urlpatterns = [
     url(r'^nfc/users/$', views.LoginByNFC.as_view(), name='nfc-users'),
     url(r'^card/credits/$', views.CardCredits.as_view(), name='card-credits'),
     url(r'^device/use/start/$', views.DeviceStartUse.as_view(), name='device-use-start'),
+    url(r'^device/use/stop/$', views.DeviceStopUse.as_view(), name='device-use-stop'),
     # url(r'^nfc/(?P<nfc>.+)/$', views.NfcLogin.as_view()),
     # url(r'^nfc/', views.NfcLogin.as_view()),
     # url(r'^getpermission/', views.GetPermission.as_view()),
