@@ -43,7 +43,7 @@ admin.site.register(Category, CategoryAdmin)
 
 
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'hourlyCost', 'category', 'mac',)
+    list_display = ('name', 'hourlyCost', 'category', 'mac', 'last_activity')
     ordering = ('name',)
 
 admin.site.register(Device, DeviceAdmin)
