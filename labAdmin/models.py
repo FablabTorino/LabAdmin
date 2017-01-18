@@ -122,15 +122,8 @@ class Group(models.Model):
     # define Many-To-Many fields
     roles=models.ManyToManyField('Role')
 
-    def can_use_device_now(self, device):
-        try:
-            return TimeSlot.objects.can_now().filter(role__group=self, role__category_device=device.category_device, role__valid=True).exists()
-        except:
-            # Any Exception return False
-            return False
-
     def __str__(self):
-        return "%s" % (self.name)
+        return self.name
 
 class Role(models.Model):
     name=models.CharField(max_length=50)
@@ -140,13 +133,6 @@ class Role(models.Model):
 
     # define Many-To-Many Fieds
     categories=models.ManyToManyField('Category',blank=True)
-
-    def can_use_device_now(self, device):
-        try:
-            return TimeSlot.objects.can_now().filter(role=self, role__category_device=device.category_device, role__valid=True).exists()
-        except:
-            # Any Exception Return False
-            return False
 
     def __str__(self):
         return self.name
