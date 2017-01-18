@@ -45,19 +45,27 @@ class OpenDoorByNFC(APIView):
 
     If the nfc code isn't correct or valid, the API save in 'LogError' a new error that contains the error then return an alert message to client (HTTP_400_BAD_REQUEST)
     """
+
+    permission_classes = (DeviceTokenPermission,)
+
     def post(self, request, format=None):
-        nfc = request.data.get('nfc_id')
-        users = UserProfile.objects.filter(card__nfc_id=nfc)
-        if not users.exists():
-            LogError(description="Api: Open Door By NFC - NFC not Valid", code=nfc).save()
+        nfc_id = request.data.get('nfc_id')
+        try:
+            card = Card.objects.get(nfc_id=nfc_id)
+        except Card.DoesNotExist:
+            LogError(description="Api: Use Device - nfc ID not valid", code=nfc_id or '').save()
             return Response("", status=status.HTTP_400_BAD_REQUEST)
 
-        can_open = False
-        for u in users:
-           if u.can_open_door_now():
-               can_open = True
-               break
-        card = users.first().card
+        token = get_token_from_request(request)
+        try:
+            device = Device.objects.get(token=token)
+        except Card.DoesNotExist:
+            LogError(description="Api: Open Door By NFC - token not valid", code=token or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+        user = card.userprofile
+        can_open = user.can_use_device_now(device)
+        users = UserProfile.objects.filter(pk=user.pk)
         log_access = LogAccess.objects.log(users=users, card=card, opened=can_open)
         users_pks = users.values_list('pk', flat=True)
         if Group.objects.filter(userprofile__in=users_pks, name__icontains='Fablab').exists():

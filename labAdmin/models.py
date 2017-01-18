@@ -93,16 +93,10 @@ class UserProfile(models.Model):
     def subscriptionExpired(self):
         return self.needSubscription and self.endSubscription < timezone.now()
 
-    def can_open_door_now(self):
-        roles = self.groups.values_list('roles__pk', flat=True).distinct()
-        return TimeSlot.objects.can_now().filter(
-            role__in=roles, role__role_kind=0, role__valid=True
-        ).exists()
-
     def can_use_device_now(self, device):
         roles = self.groups.values_list('roles__pk', flat=True).distinct()
         return TimeSlot.objects.can_now().filter(
-            role__in=roles, role__role_kind=1, role__valid=True
+            role__in=roles, role__valid=True
         ).exists()
 
     def displaygroups(self):
@@ -128,17 +122,9 @@ class Group(models.Model):
     # define Many-To-Many fields
     roles=models.ManyToManyField('Role')
 
-    def can_open_door_now(self):
-        # Define groups and role
-        try:
-            return TimeSlot.objects.can_now().filter(role__group=self,role__role_kind=0,role__valid=True).exists()
-        except:
-            # Any Exception return False
-            return False
-
     def can_use_device_now(self, device):
         try:
-            return TimeSlot.objects.can_now().filter(role__group=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
+            return TimeSlot.objects.can_now().filter(role__group=self, role__category_device=device.category_device, role__valid=True).exists()
         except:
             # Any Exception return False
             return False
@@ -147,38 +133,23 @@ class Group(models.Model):
         return "%s" % (self.name)
 
 class Role(models.Model):
-    # define role kind choices
-    ROLE_KIND_CHOICES = (
-        (0, "Door Access"),
-        (1, "Use Device"),
-    )
-
     name=models.CharField(max_length=50)
 
-    role_kind=models.IntegerField(choices=ROLE_KIND_CHOICES)
     time_slots=models.ManyToManyField(TimeSlot)
     valid=models.BooleanField(default=True)
 
     # define Many-To-Many Fieds
     categories=models.ManyToManyField('Category',blank=True)
 
-    def can_open_door_now(self):
-        # Define groups and role
-        try:
-            return TimeSlot.objects.can_now().filter(role=self, role__role_kind=0,role__valid=True).exists()
-        except:
-            # Any Exception return False
-            return False
-
     def can_use_device_now(self, device):
         try:
-            return TimeSlot.objects.can_now().filter(role=self, role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
+            return TimeSlot.objects.can_now().filter(role=self, role__category_device=device.category_device, role__valid=True).exists()
         except:
             # Any Exception Return False
             return False
 
     def __str__(self):
-        return "%s - %s" % (self.name, self.ROLE_KIND_CHOICES[self.role_kind][1])
+        return self.name
 
 class Device(models.Model):
     name = models.CharField(max_length=100)

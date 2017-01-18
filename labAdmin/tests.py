@@ -39,19 +39,16 @@ class TestLabAdmin(TestCase):
 
         fablab_role = Role.objects.create(
             name="Fablab Access",
-            role_kind=0
         )
         fablab_role.time_slots.add(daily_timeslot)
 
         guest_role = Role.objects.create(
             name="Guest Access",
-            role_kind=0
         )
         guest_role.time_slots.add(reduced_timeslot)
 
         full_devices_role = Role.objects.create(
             name="Devices Access",
-            role_kind=1
         )
         full_devices_role.time_slots.add(full_timeslot)
 
@@ -129,11 +126,12 @@ class TestLabAdmin(TestCase):
         self.assertFalse(LogAccess.objects.all().exists())
 
         client = Client()
+        auth = 'Token {}'.format(self.device.token)
         url = reverse('open-door-nfc')
         data = {
             'nfc_id': self.card.nfc_id
         }
-        response = client.post(url, data, format='json')
+        response = client.post(url, data, format='json', HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 201)
         response_data = json.loads(str(response.content, encoding='utf8'))
         self.assertIn('users', response_data)
@@ -143,19 +141,22 @@ class TestLabAdmin(TestCase):
         self.assertEqual(user_profile['name'], self.userprofile.name)
         self.assertEqual(response_data['type'], 'other')
         self.assertIn('datetime', response_data)
-        self.assertEqual(response_data['open'], self.userprofile.can_open_door_now())
+        self.assertEqual(response_data['open'], self.userprofile.can_use_device_now(self.device))
 
         users = UserProfile.objects.all()
         logaccess = LogAccess.objects.filter(users=users, card=self.card)
         self.assertTrue(logaccess.exists())
 
+        response = client.post(url, data, format='json')
+        self.assertEqual(response.status_code, 403)
+
         data = {
             'nfc_id': 0
         }
-        response = client.post(url, data, format='json')
+        response = client.post(url, data, format='json', HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 400)
 
-        response = client.get(url)
+        response = client.get(url, HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 405)
 
     def test_timeslot_manager_now(self):
