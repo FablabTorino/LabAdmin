@@ -96,7 +96,7 @@ class UserProfile(models.Model):
     def can_use_device_now(self, device):
         roles = self.groups.values_list('roles__pk', flat=True).distinct()
         return TimeSlot.objects.can_now().filter(
-            role__in=roles, role__valid=True
+            role__in=roles, role__valid=True, role__categories=device.category
         ).exists()
 
     def displaygroups(self):

@@ -55,6 +55,7 @@ class TestLabAdmin(TestCase):
         category = Category.objects.create(
             name="category"
         )
+        full_devices_role.categories.add(category)
 
         device = Device.objects.create(
             name="device",
@@ -477,4 +478,23 @@ class TestLabAdmin(TestCase):
         self.assertFalse(self.noperm_userprofile.can_use_device_now(self.device))
 
     def test_user_can_use_device_now_no_group(self):
+        self.assertFalse(self.noperm_userprofile.can_use_device_now(self.device))
+
+    def test_user_can_use_device_role_not_categories(self):
+        timeslot = TimeSlot.objects.create(
+            name="any day",
+            weekday_start=1,
+            weekday_end=7,
+            hour_start=dateparse.parse_time("00:00:00"),
+            hour_end=dateparse.parse_time("23:59:59"),
+        )
+
+        role = Role.objects.create(
+            name="role",
+        )
+        role.time_slots.add(timeslot)
+
+        group = Group.objects.create(name="group")
+        group.roles.add(role)
+        self.noperm_userprofile.groups.add(group)
         self.assertFalse(self.noperm_userprofile.can_use_device_now(self.device))
