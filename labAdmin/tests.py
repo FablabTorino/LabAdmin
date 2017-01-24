@@ -452,3 +452,29 @@ class TestLabAdmin(TestCase):
         self.assertJSONEqual(response.content.decode('utf-8'), {
             'cost': 0
         })
+
+    def test_user_can_use_device_now(self):
+        self.assertTrue(self.userprofile.can_use_device_now(self.device))
+
+    def test_user_can_use_device_now_invalid_role(self):
+        timeslot = TimeSlot.objects.create(
+            name="any day for invalid role",
+            weekday_start=1,
+            weekday_end=7,
+            hour_start=dateparse.parse_time("00:00:00"),
+            hour_end=dateparse.parse_time("23:59:59"),
+        )
+
+        role = Role.objects.create(
+            name="invalid role",
+            valid=False
+        )
+        role.time_slots.add(timeslot)
+
+        group = Group.objects.create(name="group with invalid role")
+        group.roles.add(role)
+        self.noperm_userprofile.groups.add(group)
+        self.assertFalse(self.noperm_userprofile.can_use_device_now(self.device))
+
+    def test_user_can_use_device_now_no_group(self):
+        self.assertFalse(self.noperm_userprofile.can_use_device_now(self.device))
