@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone, dateparse
 
 from .models import (
-    Card, Group, LogAccess, Role, TimeSlot, UserProfile, TimeSlot,
+    Card, Group, LogAccess, Role, TimeSlot, UserProfile,
     LogCredits, Category, Device, LogDevice
 )
 
@@ -15,20 +15,6 @@ from .models import (
 class TestLabAdmin(TestCase):
     @classmethod
     def setUpTestData(cls):
-        daily_timeslot = TimeSlot.objects.create(
-            name="thursday full day",
-            weekday_start=4,
-            weekday_end=4,
-            hour_start=dateparse.parse_time("8:0:0"),
-            hour_end=dateparse.parse_time("23:0:0"),
-        )
-        reduced_timeslot = TimeSlot.objects.create(
-            name="thursday reduced",
-            weekday_start=4,
-            weekday_end=4,
-            hour_start=dateparse.parse_time("14:0:0"),
-            hour_end=dateparse.parse_time("20:0:0"),
-        )
         full_timeslot = TimeSlot.objects.create(
             name="any day",
             weekday_start=1,
@@ -37,25 +23,11 @@ class TestLabAdmin(TestCase):
             hour_end=dateparse.parse_time("23:59:59"),
         )
 
-        fablab_role = Role.objects.create(
-            name="Fablab Access",
-        )
-        fablab_role.time_slots.add(daily_timeslot)
-
-        guest_role = Role.objects.create(
-            name="Guest Access",
-        )
-        guest_role.time_slots.add(reduced_timeslot)
-
         full_devices_role = Role.objects.create(
             name="Devices Access",
         )
         full_devices_role.time_slots.add(full_timeslot)
 
-        fab_guest_group = Group.objects.create(name="Fablab Guest")
-        fab_guest_group.roles.add(fablab_role, guest_role)
-        guest_group = Group.objects.create(name="Guest")
-        guest_group.roles.add(guest_role)
         devices_group = Group.objects.create(name="Full Devices access")
         devices_group.roles.add(full_devices_role)
 
@@ -68,7 +40,6 @@ class TestLabAdmin(TestCase):
             needSubscription=False,
             endSubscription=timezone.now()
         )
-        u.groups.add(guest_group)
         u.groups.add(devices_group)
 
         noperm_card = Card.objects.create(nfc_id=654321)
