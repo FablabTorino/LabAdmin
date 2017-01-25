@@ -100,11 +100,10 @@ class UserProfile(models.Model):
         ).exists()
 
     def can_use_device_now(self, device):
-        try:
-            return TimeSlot.objects.can_now().filter(role__group__user=self,role__role_kind=1, role__category_device=device.category_device, role__valid=True).exists()
-        except:
-            # Any Exception Return False
-            return False
+        roles = self.groups.values_list('roles__pk', flat=True).distinct()
+        return TimeSlot.objects.can_now().filter(
+            role__in=roles, role__role_kind=1, role__valid=True
+        ).exists()
 
     def displaygroups(self):
         data = []
@@ -191,6 +190,14 @@ class Device(models.Model):
     def __str__(self):
         return "%010d - %s" %(self.id, self.name)
 
+    def last_activity(self):
+        logdevice = self.logdevice_set.order_by('-id').first()
+        if not logdevice:
+            return ''
+        if logdevice.inWorking:
+            return timezone.now()
+        return logdevice.finishWork
+
     def save(self, *args, **kwargs):
         if not self.token:
             self.token = str(uuid.uuid4())
@@ -234,13 +241,18 @@ class LogDevice(models.Model):
     inWorking=models.BooleanField(default=True)
 
     def priceWork(self):
-        c = (finishWork-startWork)
-        duration = 0.01*decimal.Decimal((c.days*24+c.seconds/3600)*100)
-        return 'inWorking...' if self.inWorking else self.hourlyCost*duration
+        if self.inWorking:
+            return 'inWorking...'
+        delta = self.finishWork - self.startWork
+        duration = delta.total_seconds() / 3600
+        return round(self.hourlyCost * duration, 2)
 
     def stop(self):
         n = timezone.now()
-        self.finishWork = self.shutdownDevice = n
+        self.inWorking = False
+        self.finishWork = n
+        self.shutdownDevice = n
+        self.save(update_fields=['finishWork', 'shutdownDevice', 'inWorking'])
 
     def __str__(self):
         return "user: %s\ndevice: %s\nboot: %s\nstart: %s\ninWorking: %s\nHourlyCost: %f" %(self.user, self.device, self.bootDevice, self.startWork, "yes" if self.inWorking else "no\nshutdown: %s\nfinish: %s"%(self.shutdownDevice, self.finishWork), self.hourlyCost)
