@@ -22,7 +22,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 admin.site.register(UserProfile, UserProfileAdmin)
 
 class RoleAdmin(admin.ModelAdmin):
-    list_display = ('name', 'role_kind','valid',)
+    list_display = ('name', 'valid',)
     ordering = ('name',)
 
 admin.site.register(Role, RoleAdmin)

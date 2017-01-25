@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone, dateparse
 
 from .models import (
-    Card, Group, LogAccess, Role, TimeSlot, UserProfile, TimeSlot,
+    Card, Group, LogAccess, Role, TimeSlot, UserProfile,
     LogCredits, Category, Device, LogDevice
 )
 
@@ -15,20 +15,6 @@ from .models import (
 class TestLabAdmin(TestCase):
     @classmethod
     def setUpTestData(cls):
-        daily_timeslot = TimeSlot.objects.create(
-            name="thursday full day",
-            weekday_start=4,
-            weekday_end=4,
-            hour_start=dateparse.parse_time("8:0:0"),
-            hour_end=dateparse.parse_time("23:0:0"),
-        )
-        reduced_timeslot = TimeSlot.objects.create(
-            name="thursday reduced",
-            weekday_start=4,
-            weekday_end=4,
-            hour_start=dateparse.parse_time("14:0:0"),
-            hour_end=dateparse.parse_time("20:0:0"),
-        )
         full_timeslot = TimeSlot.objects.create(
             name="any day",
             weekday_start=1,
@@ -37,28 +23,11 @@ class TestLabAdmin(TestCase):
             hour_end=dateparse.parse_time("23:59:59"),
         )
 
-        fablab_role = Role.objects.create(
-            name="Fablab Access",
-            role_kind=0
-        )
-        fablab_role.time_slots.add(daily_timeslot)
-
-        guest_role = Role.objects.create(
-            name="Guest Access",
-            role_kind=0
-        )
-        guest_role.time_slots.add(reduced_timeslot)
-
         full_devices_role = Role.objects.create(
             name="Devices Access",
-            role_kind=1
         )
         full_devices_role.time_slots.add(full_timeslot)
 
-        fab_guest_group = Group.objects.create(name="Fablab Guest")
-        fab_guest_group.roles.add(fablab_role, guest_role)
-        guest_group = Group.objects.create(name="Guest")
-        guest_group.roles.add(guest_role)
         devices_group = Group.objects.create(name="Full Devices access")
         devices_group.roles.add(full_devices_role)
 
@@ -71,7 +40,6 @@ class TestLabAdmin(TestCase):
             needSubscription=False,
             endSubscription=timezone.now()
         )
-        u.groups.add(guest_group)
         u.groups.add(devices_group)
 
         noperm_card = Card.objects.create(nfc_id=654321)
@@ -87,6 +55,7 @@ class TestLabAdmin(TestCase):
         category = Category.objects.create(
             name="category"
         )
+        full_devices_role.categories.add(category)
 
         device = Device.objects.create(
             name="device",
@@ -129,11 +98,12 @@ class TestLabAdmin(TestCase):
         self.assertFalse(LogAccess.objects.all().exists())
 
         client = Client()
+        auth = 'Token {}'.format(self.device.token)
         url = reverse('open-door-nfc')
         data = {
             'nfc_id': self.card.nfc_id
         }
-        response = client.post(url, data, format='json')
+        response = client.post(url, data, format='json', HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 201)
         response_data = json.loads(str(response.content, encoding='utf8'))
         self.assertIn('users', response_data)
@@ -143,19 +113,22 @@ class TestLabAdmin(TestCase):
         self.assertEqual(user_profile['name'], self.userprofile.name)
         self.assertEqual(response_data['type'], 'other')
         self.assertIn('datetime', response_data)
-        self.assertEqual(response_data['open'], self.userprofile.can_open_door_now())
+        self.assertEqual(response_data['open'], self.userprofile.can_use_device_now(self.device))
 
         users = UserProfile.objects.all()
         logaccess = LogAccess.objects.filter(users=users, card=self.card)
         self.assertTrue(logaccess.exists())
 
+        response = client.post(url, data, format='json')
+        self.assertEqual(response.status_code, 403)
+
         data = {
             'nfc_id': 0
         }
-        response = client.post(url, data, format='json')
+        response = client.post(url, data, format='json', HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 400)
 
-        response = client.get(url)
+        response = client.get(url, HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 405)
 
     def test_timeslot_manager_now(self):
@@ -480,3 +453,48 @@ class TestLabAdmin(TestCase):
         self.assertJSONEqual(response.content.decode('utf-8'), {
             'cost': 0
         })
+
+    def test_user_can_use_device_now(self):
+        self.assertTrue(self.userprofile.can_use_device_now(self.device))
+
+    def test_user_can_use_device_now_invalid_role(self):
+        timeslot = TimeSlot.objects.create(
+            name="any day for invalid role",
+            weekday_start=1,
+            weekday_end=7,
+            hour_start=dateparse.parse_time("00:00:00"),
+            hour_end=dateparse.parse_time("23:59:59"),
+        )
+
+        role = Role.objects.create(
+            name="invalid role",
+            valid=False
+        )
+        role.time_slots.add(timeslot)
+
+        group = Group.objects.create(name="group with invalid role")
+        group.roles.add(role)
+        self.noperm_userprofile.groups.add(group)
+        self.assertFalse(self.noperm_userprofile.can_use_device_now(self.device))
+
+    def test_user_can_use_device_now_no_group(self):
+        self.assertFalse(self.noperm_userprofile.can_use_device_now(self.device))
+
+    def test_user_can_use_device_role_not_categories(self):
+        timeslot = TimeSlot.objects.create(
+            name="any day",
+            weekday_start=1,
+            weekday_end=7,
+            hour_start=dateparse.parse_time("00:00:00"),
+            hour_end=dateparse.parse_time("23:59:59"),
+        )
+
+        role = Role.objects.create(
+            name="role",
+        )
+        role.time_slots.add(timeslot)
+
+        group = Group.objects.create(name="group")
+        group.roles.add(role)
+        self.noperm_userprofile.groups.add(group)
+        self.assertFalse(self.noperm_userprofile.can_use_device_now(self.device))
