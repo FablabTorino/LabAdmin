@@ -204,45 +204,6 @@ class DeviceStopUse(APIView):
         return Response({"cost": log.priceWork()}, status=status.HTTP_200_OK)
 
 
-class tempUpdateUser(APIView):
-    def post(self, request, format=None):
-        users = request.data.get('users')
-
-        unk = Group.objects.get(name="Unknown")
-        ard = Group.objects.get(name="Arduino")
-        fh = Group.objects.get(name="Fablab Host")
-        fe = Group.objects.get(name="Fablab Executive")
-        fu = Group.objects.get(name="Fablab User")
-        e = 0
-        ee = 0
-
-        for uu in users:
-            n = uu['name']
-            nfc = uu['nfc']
-            t = uu['type'].title()
-
-            u = UserProfile.objects.get(name=n, nfcId=nfc)
-            u.groups.remove(unk)
-            if t == 'Arduino':
-                u.groups.add(ard)
-                u.needSubcription = False
-            elif t == 'Ordinario':
-                u.groups.add(fu)
-                u.needSubcription = True
-            elif t == 'Host' or t == 'Full':
-                u.groups.add(fh)
-                u.needSubcription = True
-            elif t == 'Direttivo':
-                u.groups.add(fe)
-                u.needSubcription = True
-            else:
-                ee += 1
-            u.save()
-
-
-
-        return Response("Updated except %d, %d" % (e,ee))
-
 class UserIdentity(APIView):
     def get(self, request, format=None):
         token_string = request.GET.get('access_token')
