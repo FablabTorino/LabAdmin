@@ -1,5 +1,8 @@
+import json
+
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
+from django.utils.translation import ugettext as _
 from django.db import transaction, IntegrityError
 
 from labAdmin.serializers import *
@@ -11,8 +14,13 @@ from rest_framework import status
 from oauth2_provider.models import AccessToken
 
 from . import functions
+from .notifications import mqtt_publish
 from .permissions import (
     get_token_from_request, DeviceTokenPermission
+)
+from .settings import (
+    MQTT_ENTRANCE_NOTIFICATION,
+    MQTT_ENTRANCE_TOPIC
 )
 
 
@@ -72,6 +80,16 @@ class OpenDoorByNFC(APIView):
             utype = "fablab"
         else:
             utype = "other"
+
+        if MQTT_ENTRANCE_NOTIFICATION and log_access.opened:
+            payload = {
+                'user': user.name,
+                'state': _('entrance')
+            }
+            try:
+                mqtt_publish(MQTT_ENTRANCE_TOPIC, json.dumps(payload))
+            except Exception as e:
+                LogError(description="Api: Open Door By NFC - failed to publish to mqtt", code=e).save()
 
         data = {
             "users": UserProfileSerializer(users, many=True).data,
