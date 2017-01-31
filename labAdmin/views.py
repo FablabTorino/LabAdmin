@@ -1,9 +1,20 @@
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.db import transaction, IntegrityError
+from django.utils import timezone
 
-from labAdmin.serializers import *
-from labAdmin.models import *
+from labAdmin.serializers import (
+    UserProfileSerializer, CardSerializer, CardUpdateSerializer
+)
+from labAdmin.models import (
+    Card,
+    Device,
+    Group,
+    LogAccess,
+    LogDevice,
+    LogError,
+    UserProfile,
+)
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status

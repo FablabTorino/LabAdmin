@@ -1,5 +1,18 @@
 from django.contrib import admin
-from labAdmin.models import *
+from labAdmin.models import (
+    Card,
+    Category,
+    Device,
+    Group,
+    LogAccess,
+    LogCredits,
+    LogDevice,
+    LogError,
+    Payment,
+    Role,
+    TimeSlot,
+    UserProfile,
+)
 
 
 class CardAdmin(admin.ModelAdmin):
