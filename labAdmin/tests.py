@@ -3,7 +3,10 @@ import json
 
 from django.contrib.auth.models import User
 from django.test import TestCase, Client, override_settings
-from django.urls import reverse
+try:
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
 from django.utils import timezone, dateparse
 
 from .models import (
