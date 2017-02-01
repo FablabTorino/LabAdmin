@@ -4,6 +4,7 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext as _
 from django.db import transaction, IntegrityError
+from django.conf import settings
 
 from labAdmin.serializers import *
 from labAdmin.models import *
@@ -18,10 +19,9 @@ from .notifications import mqtt_publish
 from .permissions import (
     get_token_from_request, DeviceTokenPermission
 )
-from .settings import (
-    MQTT_ENTRANCE_NOTIFICATION,
-    MQTT_ENTRANCE_TOPIC
-)
+
+
+MQTT_ENTRANCE_TOPIC = getattr(settings, 'LABADMIN_MQTT_ENTRANCE_TOPIC', 'labadmin/entrance')
 
 
 class LoginByNFC(APIView):
@@ -81,6 +81,7 @@ class OpenDoorByNFC(APIView):
         else:
             utype = "other"
 
+        MQTT_ENTRANCE_NOTIFICATION = getattr(settings, 'LABADMIN_NOTIFY_MQTT_ENTRANCE', False)
         if MQTT_ENTRANCE_NOTIFICATION and log_access.opened:
             payload = {
                 'user': user.name,
