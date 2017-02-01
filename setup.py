@@ -25,6 +25,7 @@ setup(
        'django<1.11,>=1.8',
        'djangorestframework>3,<4',
        'django-oauth-toolkit==0.10.0'
+       'paho-mqtt>1,<2',
     ],
     zip_safe=False,
     keywords='Fablab, lab, admin',

@@ -2,13 +2,13 @@ import datetime
 import json
 
 from django.contrib.auth.models import User
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from django.utils import timezone, dateparse
 
 from .models import (
     Card, Group, LogAccess, Role, TimeSlot, UserProfile,
-    LogCredits, Category, Device, LogDevice
+    LogCredits, Category, Device, LogDevice, LogError
 )
 
 
@@ -130,6 +130,21 @@ class TestLabAdmin(TestCase):
 
         response = client.get(url, HTTP_AUTHORIZATION=auth)
         self.assertEqual(response.status_code, 405)
+
+    @override_settings(LABADMIN_NOTIFY_MQTT_ENTRANCE=True)
+    def test_open_door_by_nfc_mqtt_error_log(self):
+        client = Client()
+        auth = 'Token {}'.format(self.device.token)
+        url = reverse('open-door-nfc')
+        data = {
+            'nfc_id': self.card.nfc_id
+        }
+
+        mqtt_errors = LogError.objects.filter(description__endswith='failed to publish to mqtt')
+        self.assertFalse(mqtt_errors.exists())
+        response = client.post(url, data, format='json', HTTP_AUTHORIZATION=auth)
+        mqtt_errors = LogError.objects.filter(description__endswith='failed to publish to mqtt')
+        self.assertEqual(mqtt_errors.count(), 1)
 
     def test_get_card_credits(self):
 
