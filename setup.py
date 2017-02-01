@@ -24,7 +24,9 @@ setup(
     install_requires=[
        'django<1.11,>=1.8',
        'djangorestframework>3,<4',
-       'django-oauth-toolkit==0.10.0'
+       'django-cors-middleware==1.3.1',
+       'django-oauth-toolkit==0.10.0',
+       'paho-mqtt>1,<2',
     ],
     zip_safe=False,
     keywords='Fablab, lab, admin',

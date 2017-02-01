@@ -31,3 +31,26 @@ urlpatterns = [
 ```
 
 Profit!
+
+### Settings
+
+The optional MQTT integration has the following settings:
+
+```
+LABADMIN_MQTT_CONFIG = {
+    'HOSTNAME': 'localhost',
+    'PORT': 1883,
+    'AUTH': None,
+    'TLS': None,
+    'PROTOCOL': MQTTv311,
+    'TRANSPORT': 'tcp',
+}
+
+# Should we publish on MQTT each entrance
+LABADMIN_NOTIFY_MQTT_ENTRANCE = False
+
+# The MQTT topic where to publish
+LABADMIN_MQTT_ENTRANCE_TOPIC = 'labadmin/entrance'
+```
+
+See [Paho MQTT documentation](https://github.com/eclipse/paho.mqtt.python#single) for `LABADMIN_MQTT_CONFIG` values.

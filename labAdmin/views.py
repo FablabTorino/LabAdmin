@@ -1,19 +1,27 @@
+import json
+
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
+from django.utils.translation import ugettext as _
 from django.db import transaction, IntegrityError
+from django.conf import settings
 
 from labAdmin.serializers import *
 from labAdmin.models import *
-from labAdmin import functions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from oauth2_provider.models import AccessToken
 
-from labAdmin import functions
+from . import functions
+from .notifications import mqtt_publish
+from .permissions import (
+    get_token_from_request, DeviceTokenPermission
+)
 
-from .permissions import DeviceTokenPermission
+
+MQTT_ENTRANCE_TOPIC = getattr(settings, 'LABADMIN_MQTT_ENTRANCE_TOPIC', 'labadmin/entrance')
 
 
 class LoginByNFC(APIView):
@@ -45,25 +53,44 @@ class OpenDoorByNFC(APIView):
 
     If the nfc code isn't correct or valid, the API save in 'LogError' a new error that contains the error then return an alert message to client (HTTP_400_BAD_REQUEST)
     """
+
+    permission_classes = (DeviceTokenPermission,)
+
     def post(self, request, format=None):
-        nfc = request.data.get('nfc_id')
-        users = UserProfile.objects.filter(card__nfc_id=nfc)
-        if not users.exists():
-            LogError(description="Api: Open Door By NFC - NFC not Valid", code=nfc).save()
+        nfc_id = request.data.get('nfc_id')
+        try:
+            card = Card.objects.get(nfc_id=nfc_id)
+        except Card.DoesNotExist:
+            LogError(description="Api: Use Device - nfc ID not valid", code=nfc_id or '').save()
             return Response("", status=status.HTTP_400_BAD_REQUEST)
 
-        can_open = False
-        for u in users:
-           if u.can_open_door_now():
-               can_open = True
-               break
-        card = users.first().card
+        token = get_token_from_request(request)
+        try:
+            device = Device.objects.get(token=token)
+        except Card.DoesNotExist:
+            LogError(description="Api: Open Door By NFC - token not valid", code=token or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+        user = card.userprofile
+        can_open = user.can_use_device_now(device)
+        users = UserProfile.objects.filter(pk=user.pk)
         log_access = LogAccess.objects.log(users=users, card=card, opened=can_open)
         users_pks = users.values_list('pk', flat=True)
         if Group.objects.filter(userprofile__in=users_pks, name__icontains='Fablab').exists():
             utype = "fablab"
         else:
             utype = "other"
+
+        MQTT_ENTRANCE_NOTIFICATION = getattr(settings, 'LABADMIN_NOTIFY_MQTT_ENTRANCE', False)
+        if MQTT_ENTRANCE_NOTIFICATION and log_access.opened:
+            payload = {
+                'user': user.name,
+                'state': _('entrance')
+            }
+            try:
+                mqtt_publish(MQTT_ENTRANCE_TOPIC, json.dumps(payload))
+            except Exception as e:
+                LogError(description="Api: Open Door By NFC - failed to publish to mqtt", code=e).save()
 
         data = {
             "users": UserProfileSerializer(users, many=True).data,
@@ -95,44 +122,95 @@ class GetDeviceByMac(APIView):
 
         return Response({"id":d.id,"name":d.name},status=status.HTTP_200_OK)
 
-class UseDevice(APIView):
+
+class DeviceStartUse(APIView):
     """
-    API for insert a new 'LogDevice' object if the user can use the device, else return an alert to client
+    API to track the start of a device usage by an user.
+    In case of success returns a json HTTP 201
+    Adds a new 'LogDevice' object if the user can use the device, otherwise returns an error.
+
     In order to use this API send a POST with the following values:
-        'deviceId': the id of device
-        'userId': the id of user
+        'nfc_id': the id of user
     """
-    def post(self,request,format=None):
-        u = functions.get_user_or_None(id=request.data.get('userId'))
 
-        if u is None:
-            LogError(description="Api: Use Device - user ID not valid",nfc=request.data.get('userId'))
-            return Response("",status=status.HTTP_400_BAD_REQUEST)
+    permission_classes = (DeviceTokenPermission,)
 
-        d = functions.get_device_or_None(id=request.data.get('deviceId'))
+    def post(self, request, format=None):
+        nfc_id = request.data.get('nfc_id')
+        try:
+            card = Card.objects.get(nfc_id=nfc_id)
+        except Card.DoesNotExist:
+            LogError(description="Api: Use Device - nfc ID not valid", code=nfc_id or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
 
-        if d is None:
-            LogError(description="Api: Use Device - device ID not valid",code=request.data.get('deviceId'))
-            return Response("",status=status.HTTP_400_BAD_REQUEST)
+        token = get_token_from_request(request)
+        try:
+            device = Device.objects.get(token=token)
+        except Card.DoesNotExist:
+            LogError(description="Api: Use Device - token not valid", code=token or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
 
-        if u.can_use_device_now(d):
-            # New Object
-            try:
-                log = LogDevice.objects.filter(device=d,inWorking=True)
-                if len(log) > 0:
-                    for ll in log:
-                        ll.stop()
-                        ll.save()
+        user = card.userprofile
+        if not user.can_use_device_now(device):
+            LogError(description="Api: Use Device - card {} can't use device {}".format(nfc_id, token))
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
 
-                n = timezone.now()
-                newLog = LogDevice(device=d,user=u, startWork=n,bootDevice=n,shutdownDevice=n - timezone.timedelta("-10 seconds"),finishWork=n - timezone.timedelta("-10 seconds"),hourlyCost=d.hourlyCost)
-                newLog.save()
-                return Response({"logId":n.id,"cost":n.hourlyCost,"canUse":True},status=status.HTTP_201_CREATED)
-            except:
-                return Response("Error during processing", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            LogError(description="Api: Use Device - the user %d can't use the device %d" % (u.id, d.id))
-            return Response("",status=status.HTTP_400_BAD_REQUEST)
+        # cleanup leaked instances
+        log = LogDevice.objects.filter(device=device, inWorking=True)
+        for ll in log:
+            ll.stop()
+
+        now = timezone.now()
+        log = LogDevice.objects.create(
+            device=device, user=user, startWork=now, bootDevice=now,
+            shutdownDevice=now + timezone.timedelta(seconds=10),
+            finishWork=now + timezone.timedelta(seconds=10),
+            hourlyCost=device.hourlyCost
+        )
+        return Response(
+            {"cost": log.hourlyCost}, status=status.HTTP_201_CREATED
+        )
+
+
+class DeviceStopUse(APIView):
+    """
+    API to track the stop of a device usage by an user.
+    In case of success returns a json HTTP 200
+    Updates the 'LogDevice' object for the user on this device, otherwise returns an error.
+
+    In order to use this API send a POST with the following values:
+        'nfc_id': the id of user
+    """
+
+    permission_classes = (DeviceTokenPermission,)
+
+    def post(self, request, format=None):
+        nfc_id = request.data.get('nfc_id')
+        try:
+            card = Card.objects.get(nfc_id=nfc_id)
+        except Card.DoesNotExist:
+            LogError(description="Api: Use Device - nfc ID not valid", code=nfc_id or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+        token = get_token_from_request(request)
+        try:
+            device = Device.objects.get(token=token)
+        except Card.DoesNotExist:
+            LogError(description="Api: Use Device - token not valid", code=token or '').save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+        user = card.userprofile
+        try:
+            log = LogDevice.objects.get(device=device, user=user, inWorking=True)
+        except LogDevice.DoesNotExist:
+            code = "card {} for device with token {}".format(nfc_id, token)
+            LogError(description="Api: Use Device - no device log found", code=code).save()
+            return Response("", status=status.HTTP_400_BAD_REQUEST)
+
+        log.stop()
+
+        return Response({"cost": log.priceWork()}, status=status.HTTP_200_OK)
+
 
 class tempUpdateUser(APIView):
     def post(self, request, format=None):
